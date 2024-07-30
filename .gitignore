@@ -1,0 +1,4 @@
+.secrets.json
+.idea
+node_modules
+target
