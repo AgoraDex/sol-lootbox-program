@@ -1,6 +1,4 @@
 use std::convert::Into;
-
-use borsh::BorshSerialize;
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
@@ -11,13 +9,11 @@ use solana_program::system_instruction::create_account;
 use solana_program::sysvar::rent::Rent;
 use solana_program::sysvar::Sysvar;
 use crate::error::CustomError;
-use crate::state::{State, StateVersion};
-
-const VAULT: &[u8] = b"vault";
-const STATE: &[u8] = b"state";
+use crate::state::{State, STATE_SEED, StateVersion, VAULT};
 
 pub fn initialize<'a>(program_id: &Pubkey,
                       admin: &AccountInfo<'a>,
+                      price: u64,
                       vault_pda: &AccountInfo<'a>,
                       vault_bump: u8,
                       state_pda: &AccountInfo<'a>,
@@ -26,6 +22,7 @@ pub fn initialize<'a>(program_id: &Pubkey,
                       name: &str,
                       signer: &Pubkey,
                       system_account: &AccountInfo<'a>,
+                      base_url: String,
 ) -> ProgramResult {
     if !admin.is_signer {
         return Err(CustomError::WrongSigner.into());
@@ -39,15 +36,13 @@ pub fn initialize<'a>(program_id: &Pubkey,
     create_vault(program_id, admin, vault_pda, vault_bump, system_account)?;
 
     msg!("Initializing state.");
-    create_state(program_id, admin, state_pda, state_bump, max_supply, name, signer, system_account)?;
+    create_state(program_id, admin, price, state_pda, state_bump, max_supply, name, signer,
+                 system_account, vault_bump, base_url)?;
 
     Ok(())
 }
 
 fn create_vault<'a>(program_id: &Pubkey, admin: &AccountInfo<'a>, vault_pda: &AccountInfo<'a>, vault_bump: u8, system_account: &AccountInfo<'a>) -> ProgramResult {
-    let rent = Rent::get()?
-        .minimum_balance(0);
-
     let seed = [admin.key.as_ref(), VAULT, &[vault_bump]];
 
     let vault = &Pubkey::create_program_address(&seed, program_id)?;
@@ -56,6 +51,8 @@ fn create_vault<'a>(program_id: &Pubkey, admin: &AccountInfo<'a>, vault_pda: &Ac
         msg!("The vault key mismatch, seed is {:?}", seed);
         return Err(ProgramError::InvalidSeeds);
     }
+
+    let rent = Rent::get()?.minimum_balance(0);
 
     invoke_signed(
         &create_account(
@@ -74,11 +71,25 @@ fn create_vault<'a>(program_id: &Pubkey, admin: &AccountInfo<'a>, vault_pda: &Ac
     Ok(())
 }
 
-fn create_state<'a>(program_id: &Pubkey, admin: &AccountInfo<'a>, state_pda: &AccountInfo<'a>, state_bump: u8, max_supply: u32, name: &str, signer: &Pubkey, system_account: &AccountInfo<'a>) -> ProgramResult {
-    let seed = [&admin.key.to_bytes(), STATE, &[state_bump]];
-    let state_account = &Pubkey::create_program_address(&seed, program_id)?;
+fn create_state<'a>(program_id: &Pubkey,
+                    admin: &AccountInfo<'a>,
+                    price: u64,
+                    state_pda: &AccountInfo<'a>,
+                    state_bump: u8,
+                    max_supply: u32,
+                    name: &str,
+                    signer: &Pubkey,
+                    system_account: &AccountInfo<'a>,
+                    vault_bump: u8,
+                    base_url: String) -> ProgramResult {
+    let seed = [&admin.key.to_bytes(), STATE_SEED, &[state_bump]];
+    let state_pub = &Pubkey::create_program_address(&seed, program_id)?;
 
-    let rent = Rent::get()?;
+    if state_pda.key != state_pub {
+        msg!("The state key mismatch, seed is {:?}", seed);
+        return Err(ProgramError::InvalidSeeds);
+    }
+
     let state = State {
         version: StateVersion::Version1,
         total_supply: 0,
@@ -86,13 +97,17 @@ fn create_state<'a>(program_id: &Pubkey, admin: &AccountInfo<'a>, state_pda: &Ac
         owner: *admin.key,
         name: name.to_string(),
         signer: *signer,
+        price,
+        vault_bump,
+        base_url,
     };
     let len = state.serialized_len()?;
-    let lamports = rent.minimum_balance(len);
+    let lamports = Rent::get()?.minimum_balance(len);
+
     invoke_signed(
         &create_account(
             admin.key,
-            state_account,
+            state_pub,
             lamports,
             len as u64,
             program_id,

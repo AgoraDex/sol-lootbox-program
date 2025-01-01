@@ -8,10 +8,16 @@ pub enum CustomError {
     WrongSigner,
     #[error("Certain admin account was expected.")]
     WrongAdminAccount,
-    #[error("A state for the specified admin account has been already initialized.")]
+    #[error("The state for the specified admin account has been already initialized.")]
     StateAlreadyInitialized,
+    #[error("The specified state wasn't initialized.")]
+    StateNotInitialized,
     #[error("PDA account cannot be signer.")]
     PdaCannotBeSigner,
+    #[error("Max supply reached.")]
+    MaxSupplyReached,
+    #[error("Wrong vault address.")]
+    WrongVault,
 }
 
 impl From<CustomError> for ProgramError {

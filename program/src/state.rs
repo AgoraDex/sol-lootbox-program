@@ -6,14 +6,20 @@ use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
 use crate::state::StateVersion::Version1;
 
+pub const STATE_SEED: &[u8] = b"state";
+pub const VAULT: &[u8] = b"vault";
+
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct State {
     pub version: StateVersion,
     pub owner: Pubkey,
+    pub vault_bump: u8,
     pub total_supply: u32,
     pub max_supply: u32,
     pub name: String,
     pub signer: Pubkey,
+    pub price: u64,
+    pub base_url: String,
 }
 
 #[derive(Debug, BorshSerialize, BorshDeserialize)]
@@ -35,6 +41,7 @@ impl State {
         let mut buf: Vec<u8> = Vec::new();
 
         self.serialize(&mut buf)?;
+
         Ok(buf.len())
     }
 
@@ -42,6 +49,13 @@ impl State {
         self.serialize(state_pda.data.borrow_mut().deref_mut())?;
 
         Ok(())
+    }
+
+    pub fn load_from(state_pda: &AccountInfo) -> Result<Self, ProgramError> {
+        let data = state_pda.data.borrow();
+        let mut buf: &[u8] = data.deref();
+        let state = State::deserialize(&mut buf)?;
+        Ok(state)
     }
 }
 
@@ -58,7 +72,10 @@ fn test_save_to() {
         total_supply: 0,
         max_supply: 100,
         name: "DLS 1".to_string(),
-        signer
+        signer,
+        vault_bump: 255,
+        price: 5,
+        base_url: "https://example.com/".to_string()
     };
 
     let mut buf: Vec<u8> = Vec::with_capacity(100);

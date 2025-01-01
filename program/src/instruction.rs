@@ -6,7 +6,9 @@ use solana_program::pubkey::Pubkey;
 #[derive(Clone, Debug, PartialEq, BorshSerialize, BorshDeserialize)]
 #[borsh(use_discriminant = true)]
 pub enum Instruction {
-    Buy = 0,
+    Buy {
+        count: u8,
+    } = 0,
     Withdraw = 1,
     Initialize {
         vault_bump: u8,
@@ -14,6 +16,8 @@ pub enum Instruction {
         max_supply: u32,
         signer: Pubkey,
         name: String,
+        price: u64,
+        base_url: String,
     } = 255,
 }
 
