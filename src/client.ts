@@ -8,7 +8,7 @@ import {
     SystemProgram,
     Transaction,
     TransactionInstruction,
-    SYSVAR_INSTRUCTIONS_PUBKEY, ParsedAccountData
+    SYSVAR_INSTRUCTIONS_PUBKEY, ParsedAccountData, CreateAccountParams
 } from "@solana/web3.js";
 import * as spl from '@solana/spl-token';
 import * as mpl from "@metaplex-foundation/mpl-token-metadata";
@@ -19,83 +19,29 @@ import {
 } from "@metaplex-foundation/umi-web3js-adapters";
 import * as umiBundle from '@metaplex-foundation/umi-bundle-defaults';
 import {keypairIdentity} from "@metaplex-foundation/umi";
-import {Initialize, serializeInstruction} from "./instruction";
+import {newAdmin} from "./commands/new-admin";
+import {ADMIN, PAYER} from "./secrets";
+import {consoleCmd} from "./commands/console";
+import {init} from "./commands/init";
+import {buy} from "./commands/buy";
 
 // import * as fs from 'fs';
-const secrets = require('../.secrets.json');
 // import secrets from '../.secrets.json' assert {type: "json"};
 
 const programId = new PublicKey("HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN");
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
 
-let payer = Keypair.fromSecretKey(Uint8Array.from(secrets.payer_key));
-console.info("Payer: " + payer.publicKey);
-let receiver = Keypair.fromSecretKey(Uint8Array.from(secrets.receiver_key));
-console.info("Receiver: " + receiver.publicKey);
 // let mint = Keypair.fromSecretKey(Uint8Array.from(secrets.minter_key));
 // console.log("Mint: " + mint);
 
-function toHex(key: Buffer | PublicKey | ParsedAccountData | undefined) {
-    if (key == undefined) {
-        return "undefined";
-    }
-    let buf;
-    if (key instanceof Buffer) {
-        buf = key;
-    }
-    else if (key instanceof PublicKey) {
-        buf = key.toBuffer();
-    }
-    else {
-        return key.parsed.toString();
-    }
-    return Array.from(buf).map(value => value.toString(16).padStart(2, "0")).toString()
-}
+(BigInt.prototype as any).toJSON = function () {
+    return this.toString();
+};
 
 const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-async function main() {
-    const blockhashInfo = await connection.getLatestBlockhash();
-    let tx = new Transaction(blockhashInfo);
-    let vault_pda = PublicKey.findProgramAddressSync([payer.publicKey.toBytes(), Buffer.from("vault")], programId)
-    let state_pda = PublicKey.findProgramAddressSync([payer.publicKey.toBytes(), Buffer.from("state")], programId)
 
-    console.info("Vault: " + toHex(vault_pda[0]));
-    console.info("State: " + toHex(state_pda[0]));
-
-    let init = new Initialize(
-        vault_pda[1],
-        state_pda[1],
-        100,
-        payer.publicKey.toBytes(),
-        "DLS 0.1"
-    );
-
-    // let str = Array.from(serializeInstruction(init)).map(value => value.toString(16).padStart(2, "0")).toString()
-    // console.log("Ser: " + str);
-
-    tx.add(
-        new TransactionInstruction({
-            programId: programId,
-            keys: [
-                {pubkey: payer.publicKey, isWritable: false, isSigner: true},
-                {pubkey: vault_pda[0], isWritable: true, isSigner: false},
-                {pubkey: state_pda[0], isWritable: true, isSigner: false},
-                {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
-            ],
-            data: Buffer.from(serializeInstruction(init)),
-        })
-    );
-
-    // tx.sign(payer);
-    // let hash = await sendAndConfirmTransaction(connection, tx, [payer]);
-    // console.log("tx hash: " + hash);
-
-    let data = await connection.getParsedAccountInfo(state_pda[0]);
-    console.info("Data: " + toHex(data.value?.data))
-}
-
-async function main2() {
+async function main1() {
     const blockhashInfo = await connection.getLatestBlockhash();
 
     let tx = new Transaction(blockhashInfo);
@@ -105,7 +51,7 @@ async function main2() {
 
     const rentExemptMintLamports = await spl.getMinimumBalanceForRentExemptMint(connection);
 
-    let invoicePda = PublicKey.findProgramAddressSync([Buffer.from("invoice_seed"), payer.publicKey.toBuffer()], programId)
+    let invoicePda = PublicKey.findProgramAddressSync([Buffer.from("invoice_seed"), PAYER.publicKey.toBuffer()], programId)
     console.info("Invoice PDA: " + invoicePda[0] + ", bump: " + invoicePda[1]);
 
     let authorityPda = PublicKey.findProgramAddressSync([Buffer.from("mint_authority_seed")], programId);
@@ -113,7 +59,7 @@ async function main2() {
 
     let umiContext = umiBundle
         .createUmi(connection)
-        .use(keypairIdentity(fromWeb3JsKeypair(payer)));
+        .use(keypairIdentity(fromWeb3JsKeypair(PAYER)));
 
     let tokenMetadataPda = mpl.findMetadataPda(umiContext, {mint: fromWeb3JsPublicKey(tokenId.publicKey)});
     let tokenMasterPda = mpl.findMasterEditionPda(umiContext, {mint: fromWeb3JsPublicKey(tokenId.publicKey)});
@@ -149,7 +95,7 @@ async function main2() {
     tx.add(
         // create token account
         SystemProgram.createAccount({
-            fromPubkey: payer.publicKey,
+            fromPubkey: PAYER.publicKey,
             newAccountPubkey: tokenId.publicKey,
             space: spl.MINT_SIZE,
             lamports: rentExemptMintLamports,
@@ -165,13 +111,13 @@ async function main2() {
         ),
     )
 
-    let destinationAta = spl.getAssociatedTokenAddressSync(tokenId.publicKey, payer.publicKey);
+    let destinationAta = spl.getAssociatedTokenAddressSync(tokenId.publicKey, PAYER.publicKey);
     tx.add(
         // create destination account
         spl.createAssociatedTokenAccountInstruction(
-            payer.publicKey,
+            PAYER.publicKey,
             destinationAta,
-            payer.publicKey,
+            PAYER.publicKey,
             tokenId.publicKey
         )
     );
@@ -180,7 +126,7 @@ async function main2() {
         new TransactionInstruction({
             programId: programId,
             keys: [
-                {pubkey: payer.publicKey, isWritable: false, isSigner: true},
+                {pubkey: PAYER.publicKey, isWritable: false, isSigner: true},
                 {pubkey: tokenId.publicKey, isWritable: true, isSigner: false},
                 {pubkey: authorityPda[0], isWritable: true, isSigner: false},
                 {pubkey: destinationAta, isWritable: true, isSigner: false},
@@ -195,16 +141,40 @@ async function main2() {
         })
     );
 
-    tx.sign(payer);
+    tx.sign(PAYER);
 
-    let hash = await sendAndConfirmTransaction(connection, tx, [payer, tokenId]);
+    let hash = await sendAndConfirmTransaction(connection, tx, [PAYER, tokenId]);
     console.log("tx hash: " + hash);
     // console.log("Dry run");
 }
 
+async function main (argv: string[]) {
+    if (argv.length != 3) {
+        throw new Error("Expected at least one argument.");
+    }
+    switch (argv[2].toLowerCase()) {
+        case "buy":
+            await buy(connection, programId);
+            break;
+        case "init":
+            await init(connection, programId);
+            break;
+        case "new-admin":
+            await newAdmin(connection);
+            break;
+        case "withdraw":
+            break;
+        case "console":
+            await consoleCmd(connection);
+            break;
+        default:
+            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin>");
+    }
+}
+
 (async () => {
     try {
-        await main();
+        await main(process.argv);
     } catch (e) {
         console.error(e);
     }

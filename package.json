@@ -7,7 +7,7 @@
     "start": "npm run build -- -w",
     "run": "npx ts-node src/client.ts",
     "build": "cd program && cargo build-bpf && cd ../",
-    "deploy": "solana program deploy program/target/deploy/sm2.so"
+    "deploy": "solana program deploy program/target/deploy/sm.so"
   },
   "keywords": [
     "solana"
@@ -24,6 +24,7 @@
     "borsh": "^2.0.0",
     "borsher": "^3.5.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "@swc/core": "^1.10.1"
   }
 }
