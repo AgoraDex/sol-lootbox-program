@@ -9,25 +9,25 @@ use solana_program::entrypoint::ProgramResult;
 use solana_program::program::invoke_signed;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
-use spl_token::instruction::mint_to;
+use spl_token::instruction::{mint_to, transfer};
 
 use crate::error::CustomError;
 use crate::state::{State, VAULT};
 
 pub fn buy<'a>(program_id: &Pubkey,
                buyer: &AccountInfo<'a>,
-               state_pda: &AccountInfo<'a>,
-               invoice_pda: &AccountInfo<'a>,
-               vault_pda: &AccountInfo<'a>,
+               buyer_ata: &AccountInfo<'a>,
+               payment_ata: &AccountInfo<'a>,
                destination_ata: &AccountInfo<'a>,
-               token_account: &AccountInfo<'a>,
+               state_pda: &AccountInfo<'a>,
+               vault_pda: &AccountInfo<'a>,
+               ticket_mint: &AccountInfo<'a>,
                metadata_pda: &AccountInfo<'a>,
                master_pda: &AccountInfo<'a>,
                system_program: &AccountInfo<'a>,
                sysvar_program: &AccountInfo<'a>,
                spl_program: &AccountInfo<'a>,
                mpl_program: &AccountInfo<'a>,
-               count: u8,
 ) -> ProgramResult {
     if !buyer.is_signer {
         msg!("Buyer must be signer.");
@@ -56,38 +56,78 @@ pub fn buy<'a>(program_id: &Pubkey,
         return Err(CustomError::WrongVault.into());
     }
 
-    let available = invoice_pda.lamports();
-    let required = state.price * count as u64;
+    accept_payment(
+        &state,
+        buyer,
+        buyer_ata,
+        payment_ata,
+        spl_program
+    )?;
 
-    if required > available {
-        msg!("Invoice account doesn't have enough funds, required {required}.",);
-        return Err(ProgramError::InsufficientFunds);
-    }
+    // secp256k1_recover()
 
-    mint_token(&state, buyer, token_account,
+    mint_token(&state, buyer, ticket_mint,
                metadata_pda, master_pda, destination_ata, system_program, sysvar_program,
                spl_program, mpl_program, vault_pda)?;
 
-    **invoice_pda.lamports.borrow_mut() -= required;
-    **vault_pda.lamports.borrow_mut() += required;
-
-    state.total_supply += count as u32;
+    state.total_supply += 1;
     state.save_to(state_pda)?;
 
     Ok(())
 }
 
+fn accept_payment<'a>(
+    state: &State,
+    buyer: &AccountInfo<'a>,
+    buyer_ata: &AccountInfo<'a>,
+    payment_ata: &AccountInfo<'a>,
+    spl_program: &AccountInfo<'a>,
+) -> ProgramResult {
+    // let seed = [&state.owner.to_bytes(), VAULT, &[state.vault_bump]];
+
+    if state.payment_ata != *payment_ata.key {
+        msg!("wrong payment_ata value");
+        return Err(CustomError::WrongPaymentAta.into());
+    }
+
+    if !spl_token::check_id(spl_program.key) {
+        msg!("Wrong SPL token program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    msg!("Accept payment.");
+
+    invoke_signed(
+        &transfer(
+            spl_program.key,
+            buyer_ata.key,
+            payment_ata.key,
+            buyer.key,
+            &[],
+            state.price,
+        )?,
+        &[
+            buyer_ata.clone(),
+            payment_ata.clone(),
+            spl_program.clone()
+        ],
+        &[],
+    )?;
+
+    Ok(())
+}
+
 fn mint_token<'a>(state: &State,
-              payer: &AccountInfo<'a>,
-              mint: &AccountInfo<'a>,
-              metadata_pda: &AccountInfo<'a>,
-              master_pda: &AccountInfo<'a>,
-              destination_ata: &AccountInfo<'a>,
-              system_program: &AccountInfo<'a>,
-              sysvar_instructions: &AccountInfo<'a>,
-              spl_program: &AccountInfo<'a>,
-              mpl_program: &AccountInfo<'a>,
-              vault: &AccountInfo<'a>,
+                  payer: &AccountInfo<'a>,
+                  mint: &AccountInfo<'a>,
+                  metadata_pda: &AccountInfo<'a>,
+                  master_pda: &AccountInfo<'a>,
+                  destination_ata: &AccountInfo<'a>,
+                  system_program: &AccountInfo<'a>,
+                  sysvar_instructions: &AccountInfo<'a>,
+                  spl_program: &AccountInfo<'a>,
+                  mpl_program: &AccountInfo<'a>,
+                  vault: &AccountInfo<'a>,
 ) -> ProgramResult {
     let seed = [&state.owner.to_bytes(), VAULT, &[state.vault_bump]];
 
@@ -132,7 +172,7 @@ fn mint_token<'a>(state: &State,
     // let master_edition_pda = MasterEdition::find_pda(mint.key).0;
 
     let uri = String::new() + &state.base_url + &mint.key.to_string();
-    let name = String::new() + &state.name + &state.total_supply.to_string();
+    let name = String::new() + &state.name + " #" + &state.total_supply.to_string();
 
     msg!("Create mpl metadata.");
 

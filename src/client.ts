@@ -24,11 +24,10 @@ import {ADMIN, PAYER} from "./secrets";
 import {consoleCmd} from "./commands/console";
 import {init} from "./commands/init";
 import {buy} from "./commands/buy";
-
-// import * as fs from 'fs';
-// import secrets from '../.secrets.json' assert {type: "json"};
+import {createToken} from "./commands/create-token";
 
 const programId = new PublicKey("HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN");
+const usdcMint = new PublicKey("Bf8SC6jEMH2sZ5wTK8nKrc9MeKUDwjNNGfC1fFFKEckF");
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
 
@@ -154,7 +153,7 @@ async function main (argv: string[]) {
     }
     switch (argv[2].toLowerCase()) {
         case "buy":
-            await buy(connection, programId);
+            await buy(connection, programId, usdcMint);
             break;
         case "init":
             await init(connection, programId);
@@ -166,6 +165,9 @@ async function main (argv: string[]) {
             break;
         case "console":
             await consoleCmd(connection);
+            break;
+        case "create-token":
+            await createToken(connection)
             break;
         default:
             console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin>");

@@ -13,5 +13,6 @@ mpl-token-metadata = "4.1.2"
 thiserror = { version = "1.0.61" }
 num-derive = { version = "0.3" }
 borsh = { version = "1.5.1" }
+libsecp256k1 = { version = "0.7.1"}
 #borsh-derive = { version = "1.5.1" }
 #metaplex-token-metadata = { version = "0.0.1" , features = ["no-entrypoint"] }

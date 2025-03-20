@@ -1,1 +1,1 @@
-docker -v ./cache:/root/.cache/solana/
+docker -v ./cache:/root/.cache/solana/ 

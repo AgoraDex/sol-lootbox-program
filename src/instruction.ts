@@ -30,12 +30,9 @@ export class Initialize {
 
 export class Buy {
     instruction: InstructionType = InstructionType.Buy;
-    count: number;
 
-    constructor(count: number) {
-        this.count = count;
+    constructor() {
     }
-
 }
 
 const initializeSchema = BorshSchema.Struct({
@@ -52,7 +49,6 @@ const initializeSchema = BorshSchema.Struct({
 
 const buySchema = BorshSchema.Struct({
     instruction: BorshSchema.u8,
-    count: BorshSchema.u8,
 });
 
 

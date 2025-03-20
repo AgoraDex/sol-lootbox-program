@@ -5,6 +5,7 @@ use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint,
 use crate::instruction::Instruction;
 use crate::processors::buy::buy;
 use crate::processors::initialize::initialize;
+use crate::processors::migrate::migrate_to_v2;
 
 mod instruction;
 mod error;
@@ -22,11 +23,12 @@ fn process_instruction<'a>(
 
     let instruction = Instruction::unpack(instruction_data)?;
     match instruction {
-        Instruction::Buy { count } => {
+        Instruction::Buy {  } => {
             let payer = next_account_info(accounts_iter)?;
+            let payer_ata = next_account_info(accounts_iter)?;
+            let payment_ata = next_account_info(accounts_iter)?;
             let vault_pda = next_account_info(accounts_iter)?;
             let state_pda = next_account_info(accounts_iter)?;
-            let invoice_pda = next_account_info(accounts_iter)?;
             let destination_ata = next_account_info(accounts_iter)?;
             let token_account = next_account_info(accounts_iter)?;
             let metadata_pda = next_account_info(accounts_iter)?;
@@ -36,21 +38,32 @@ fn process_instruction<'a>(
             let spl_program = next_account_info(accounts_iter)?;
             let mpl_program = next_account_info(accounts_iter)?;
 
-            buy(program_id, payer, state_pda, invoice_pda, vault_pda, destination_ata,
-                token_account, metadata_pda,
+            buy(program_id, payer, payer_ata, payment_ata, state_pda, vault_pda,
+                destination_ata, token_account, metadata_pda,
                 master_pda, system_account, sysvar_account, spl_program,
-                mpl_program, count)?;
+                mpl_program)?;
         }
-        Instruction::Withdraw => {}
+        Instruction::Withdraw { .. } => {}
         Instruction::Initialize { vault_bump, state_bump, max_supply, signer, name, price, base_url } => {
             let admin = next_account_info(accounts_iter)?;
             let vault_pda = next_account_info(accounts_iter)?;
             let state_pda = next_account_info(accounts_iter)?;
             let system_account = next_account_info(accounts_iter)?;
+            let payment_ata = next_account_info(accounts_iter)?;
 
-            initialize(program_id, admin, price, vault_pda, vault_bump, state_pda, state_bump,
+            initialize(program_id, admin, price, payment_ata, vault_pda, vault_bump,
+                       state_pda, state_bump,
                        max_supply, name.as_str(), &signer, system_account, base_url)?;
         }
+        Instruction::ObtainTicket { .. } => {}
+        Instruction::MigrateToV2 { state_bump } => {
+            let admin = next_account_info(accounts_iter)?;
+            let state_pda = next_account_info(accounts_iter)?;
+            let payment_ata = next_account_info(accounts_iter)?;
+
+            migrate_to_v2(program_id, admin, state_pda, payment_ata, state_bump)?;
+        }
+        Instruction::AdminWithdraw { .. } => {}
     }
 
     Ok(())

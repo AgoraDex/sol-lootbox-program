@@ -12,12 +12,20 @@ pub enum CustomError {
     StateAlreadyInitialized,
     #[error("The specified state wasn't initialized.")]
     StateNotInitialized,
+    #[error("The specified state version is wrong.")]
+    StateWrongVersion,
     #[error("PDA account cannot be signer.")]
     PdaCannotBeSigner,
     #[error("Max supply reached.")]
     MaxSupplyReached,
     #[error("Wrong vault address.")]
     WrongVault,
+    #[error("Wrong state address.")]
+    WrongState,
+    #[error("Wrong payment ata.")]
+    WrongPaymentAta,
+    #[error("The account's data has not enough space.")]
+    NotEnoughSpace,
 }
 
 impl From<CustomError> for ProgramError {

@@ -10,6 +10,19 @@ pub const STATE_SEED: &[u8] = b"state";
 pub const VAULT: &[u8] = b"vault";
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct StateV1 {
+    pub version: StateVersion,
+    pub owner: Pubkey,
+    pub vault_bump: u8,
+    pub total_supply: u32,
+    pub max_supply: u32,
+    pub name: String,
+    pub signer: Pubkey,
+    pub price: u64,
+    pub base_url: String
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct State {
     pub version: StateVersion,
     pub owner: Pubkey,
@@ -20,14 +33,16 @@ pub struct State {
     pub signer: Pubkey,
     pub price: u64,
     pub base_url: String,
+    pub payment_ata: Pubkey
 }
 
-#[derive(Debug, BorshSerialize, BorshDeserialize)]
+#[derive(Debug, PartialEq, BorshSerialize, BorshDeserialize)]
 #[repr(u8)]
 #[borsh(use_discriminant = true)]
 pub enum StateVersion {
     // Undefined = 0,
     Version1 = 1,
+    Version2 = 2,
 }
 
 impl State {
@@ -65,6 +80,8 @@ fn test_save_to() {
     println!("Owner: {:?}", owner.to_bytes());
     let signer = Pubkey::new_unique();
     println!("Signer: {:?}", signer.to_bytes());
+    let payment_ata = Pubkey::new_unique();
+    println!("Payment: {:?}", payment_ata.to_bytes());
 
     let state = State {
         version: Version1,
@@ -75,7 +92,8 @@ fn test_save_to() {
         signer,
         vault_bump: 255,
         price: 5,
-        base_url: "https://example.com/".to_string()
+        base_url: "https://example.com/".to_string(),
+        payment_ata
     };
 
     let mut buf: Vec<u8> = Vec::with_capacity(100);

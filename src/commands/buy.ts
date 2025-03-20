@@ -1,4 +1,5 @@
 import {
+    AccountInfo,
     Connection, Keypair,
     PublicKey,
     sendAndConfirmTransaction,
@@ -14,6 +15,14 @@ import * as umiBundle from "@metaplex-foundation/umi-bundle-defaults";
 import {keypairIdentity} from "@metaplex-foundation/umi";
 import {fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey} from "@metaplex-foundation/umi-web3js-adapters";
 import * as mpl from "@metaplex-foundation/mpl-token-metadata";
+import {createToken} from "./create-token";
+import {getOrCreateAssociatedTokenAccount} from "@solana/spl-token";
+import {getAssociatedTokenAddressSync} from "@solana/spl-token/src/state/mint";
+import type {Account} from "@solana/spl-token/src/state/account";
+import {getAccount} from "@solana/spl-token/src/state/account";
+import {TokenAccountNotFoundError, TokenInvalidAccountOwnerError} from "@solana/spl-token/src/errors";
+import {createAssociatedTokenAccountInstruction} from "@solana/spl-token/src/instructions/associatedTokenAccount";
+import {createApproveInstruction} from "@solana/spl-token/src/instructions/approve";
 
 const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 
@@ -21,47 +30,41 @@ const SYSVAR_INSTRUCTIONS_PUBKEY = new PublicKey(
     'Sysvar1nstructions1111111111111111111111111',
 );
 
-export async function buy(connection: Connection, programId: PublicKey) {
+export async function buy(connection: Connection, programId: PublicKey, tokenMint: PublicKey) {
     const blockhashInfo = await connection.getLatestBlockhash();
     const balanceForRentExemption = await connection.getMinimumBalanceForRentExemption(0);
     let tx = new Transaction(blockhashInfo);
-    let vault_pda = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from("vault")], programId);
-    console.info(`Vault: ${vault_pda[0]}`);
-    let state_pda = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from("state")], programId);
-    console.info(`State: ${state_pda[0]}`);
-    let invoice_pub = await PublicKey.createWithSeed(PAYER.publicKey, "invoice", programId);
-    console.info(`Invoice: ${invoice_pub}, exemption: ${balanceForRentExemption}`);
+    let vaultPda = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from("vault")], programId);
+    console.info(`Vault: ${vaultPda[0]}`);
+    let statePda = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from("state")], programId);
+    console.info(`State: ${statePda[0]}`);
 
-    let accountInfo = await connection.getParsedAccountInfo(state_pda[0]);
+    let accountInfo = await connection.getParsedAccountInfo(statePda[0]);
     if (accountInfo.value == null) {
-        throw new Error(`There is no account ${state_pda[0]}`);
+        throw new Error(`There is no account ${statePda[0]}`);
     }
     let state = loadState(accountInfo.value);
 
-    let invoice_info = await connection.getAccountInfo(invoice_pub);
-
-    if (invoice_info == null) {
-        tx.add(
-            SystemProgram.createAccountWithSeed({
-                fromPubkey: PAYER.publicKey,
-                space: 0,
-                programId: programId,
-                lamports: Number(state.price * 3n) + balanceForRentExemption,
-                newAccountPubkey: invoice_pub,
-                seed: "invoice",
-                basePubkey: PAYER.publicKey
-            })
-        );
-    }
-    else {
-        tx.add(SystemProgram.transfer({
-            fromPubkey: PAYER.publicKey,
-            lamports: Number(state.price * 3n),
-            toPubkey: invoice_pub,
-        }));
+    let payerAtaPub = getAssociatedTokenAddressSync(tokenMint, PAYER.publicKey);
+    let payerAtaAccount=  await connection.getAccountInfo(payerAtaPub);
+    if (payerAtaAccount == null) {
+        tx.add(createAssociatedTokenAccountInstruction(
+            PAYER.publicKey,
+            payerAtaPub,
+            PAYER.publicKey,
+            tokenMint,
+        ));
     }
 
-    // TODO: load it from backend
+    let amount = state.price * 3;
+
+    tx.add(createApproveInstruction(
+        payerAtaPub,
+        PAYER.publicKey,
+        PAYER.publicKey,
+        amount
+    ));
+
     let tokenId = Keypair.generate();
     const rentExemptMintLamports = await spl.getMinimumBalanceForRentExemptMint(connection);
 
@@ -79,8 +82,8 @@ export async function buy(connection: Connection, programId: PublicKey) {
         spl.createInitializeMintInstruction(
             tokenId.publicKey,
             0,
-            vault_pda[0],
-            vault_pda[0],
+            vaultPda[0],
+            vaultPda[0],
             spl.TOKEN_PROGRAM_ID
         ),
     )
@@ -104,17 +107,14 @@ export async function buy(connection: Connection, programId: PublicKey) {
     let tokenMasterPda = mpl.findMasterEditionPda(umiContext, {mint: fromWeb3JsPublicKey(tokenId.publicKey)});
     let mplId = toWeb3JsPublicKey(mpl.MPL_TOKEN_METADATA_PROGRAM_ID);
 
-
-
-
-    let buy = new Buy(3);
+    let buy = new Buy;
 
     tx.add(new TransactionInstruction({
             programId: programId,
             keys: [
                 {pubkey: PAYER.publicKey, isWritable: false, isSigner: true},
-                {pubkey: vault_pda[0], isWritable: true, isSigner: false},
-                {pubkey: state_pda[0], isWritable: true, isSigner: false},
+                {pubkey: vaultPda[0], isWritable: true, isSigner: false},
+                {pubkey: statePda[0], isWritable: true, isSigner: false},
                 {pubkey: invoice_pub, isWritable: true, isSigner: false},
                 {pubkey: destinationAta, isWritable: true, isSigner: false},
                 {pubkey: tokenId.publicKey, isWritable: true, isSigner: true},
@@ -133,9 +133,9 @@ export async function buy(connection: Connection, programId: PublicKey) {
     console.log("tx hash: " + hash);
 
     // reload account
-    accountInfo = await connection.getParsedAccountInfo(state_pda[0]);
+    accountInfo = await connection.getParsedAccountInfo(statePda[0]);
     if (accountInfo.value == null) {
-        throw new Error(`There is no account ${state_pda[0]}`);
+        throw new Error(`There is no account ${statePda[0]}`);
     }
     let changedState = loadState(accountInfo.value);
 

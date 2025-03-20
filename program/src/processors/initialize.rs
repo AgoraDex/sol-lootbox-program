@@ -14,6 +14,7 @@ use crate::state::{State, STATE_SEED, StateVersion, VAULT};
 pub fn initialize<'a>(program_id: &Pubkey,
                       admin: &AccountInfo<'a>,
                       price: u64,
+                      payment_ata: &AccountInfo<'a>,
                       vault_pda: &AccountInfo<'a>,
                       vault_bump: u8,
                       state_pda: &AccountInfo<'a>,
@@ -37,7 +38,7 @@ pub fn initialize<'a>(program_id: &Pubkey,
 
     msg!("Initializing state.");
     create_state(program_id, admin, price, state_pda, state_bump, max_supply, name, signer,
-                 system_account, vault_bump, base_url)?;
+                 system_account, vault_bump, base_url, payment_ata)?;
 
     Ok(())
 }
@@ -81,7 +82,8 @@ fn create_state<'a>(program_id: &Pubkey,
                     signer: &Pubkey,
                     system_account: &AccountInfo<'a>,
                     vault_bump: u8,
-                    base_url: String) -> ProgramResult {
+                    base_url: String,
+                    payment_ata: &AccountInfo) -> ProgramResult {
     let seed = [&admin.key.to_bytes(), STATE_SEED, &[state_bump]];
     let state_pub = &Pubkey::create_program_address(&seed, program_id)?;
 
@@ -100,6 +102,7 @@ fn create_state<'a>(program_id: &Pubkey,
         price,
         vault_bump,
         base_url,
+        payment_ata: *payment_ata.key
     };
     let len = state.serialized_len()?;
     let lamports = Rent::get()?.minimum_balance(len);

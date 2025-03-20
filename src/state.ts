@@ -39,6 +39,7 @@ const schema = BorshSchema.Struct({
     signer: BorshSchema.Array(BorshSchema.u8, 32),
     price: BorshSchema.u64,
     base_url: BorshSchema.String,
+    payment_ata: BorshSchema.Array(BorshSchema.u8, 32)
 });
 
 export function loadState(accountInfo: AccountInfo<Buffer | ParsedAccountData>) : State {
