@@ -4,6 +4,7 @@ use solana_program::entrypoint::ProgramResult;
 use solana_program::pubkey::Pubkey;
 
 use crate::error::CustomError;
+use crate::instruction::MigrateToV2Params;
 use crate::state::{State, STATE_SEED, StateV1};
 use crate::state::StateVersion::{Version1, Version2};
 
@@ -12,13 +13,13 @@ pub fn migrate_to_v2<'a>(
     admin: &AccountInfo<'a>,
     state_pda: &AccountInfo<'a>,
     payment_ata: &AccountInfo<'a>,
-    state_bump: u8
+    params: MigrateToV2Params,
 ) -> ProgramResult {
     if !admin.is_signer {
         return Err(CustomError::WrongSigner.into());
     }
 
-    let seed = [&admin.key.to_bytes(), STATE_SEED, &[state_bump]];
+    let seed = [&admin.key.to_bytes(), STATE_SEED, &[params.state_bump]];
     let state_pub = &Pubkey::create_program_address(&seed, program_id)?;
 
     if state_pub != state_pda.key {
@@ -43,7 +44,7 @@ pub fn migrate_to_v2<'a>(
 
     let state = State {
         version: Version2,
-        signer: state_v1.signer,
+        signer: params.signer,
         max_supply: state_v1.max_supply,
         name: state_v1.name,
         total_supply: state_v1.total_supply,
@@ -51,7 +52,8 @@ pub fn migrate_to_v2<'a>(
         vault_bump: state_v1.vault_bump,
         price: state_v1.price,
         base_url: state_v1.base_url,
-        payment_ata: *payment_ata.key
+        payment_ata: *payment_ata.key,
+        first_index: params.first_index
     };
 
     let required_len = state.serialized_len()?;

@@ -1,5 +1,6 @@
 import {
-    Connection, Keypair,
+    ComputeBudgetInstruction, ComputeBudgetProgram,
+    Connection,
     PublicKey,
     sendAndConfirmTransaction,
     SystemProgram,
@@ -7,19 +8,21 @@ import {
     TransactionInstruction
 } from "@solana/web3.js";
 import {ADMIN, PAYER} from "../secrets";
-import {loadState, STATE_SEED, VAULT_SEED} from "../state";
-import {Buy, serializeBuy} from "../instruction";
+import {loadState, STATE_SEED, TICKET_SEED, VAULT_SEED} from "../state";
+import {ObtainTicket, serializeObtainTicket, Signature} from "../instruction";
 import * as spl from "@solana/spl-token";
 import * as umiBundle from "@metaplex-foundation/umi-bundle-defaults";
 import {keypairIdentity} from "@metaplex-foundation/umi";
 import {fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey} from "@metaplex-foundation/umi-web3js-adapters";
 import * as mpl from "@metaplex-foundation/mpl-token-metadata";
 
+// const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+
 const SYSVAR_INSTRUCTIONS_PUBKEY = new PublicKey(
     'Sysvar1nstructions1111111111111111111111111',
 );
 
-export async function buy(connection: Connection, programId: PublicKey, paymentTokenMint: PublicKey) {
+export async function obtain(connection: Connection, programId: PublicKey, ticketId: number, expiredAt: number, signature: Signature) {
     const blockhashInfo = await connection.getLatestBlockhash();
     const balanceForRentExemption = await connection.getMinimumBalanceForRentExemption(0);
     let tx = new Transaction(blockhashInfo);
@@ -28,85 +31,45 @@ export async function buy(connection: Connection, programId: PublicKey, paymentT
     let statePda = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(STATE_SEED)], programId);
     console.info(`State: ${statePda[0]}`);
 
+    console.info(`Ticket Id: ${ticketId}, Expired At: ${expiredAt}`);
+    let ticketIdBuf = Buffer.alloc(4);
+    ticketIdBuf.writeUInt32BE(ticketId);
+    let [ticketPda, ticketBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(TICKET_SEED), ticketIdBuf], programId)
+    console.info(`Ticket: ${ticketPda}`);
+    console.info(`Signature recId: ${signature.recId}, rs: ${signature.rs}`);
+
     let accountInfo = await connection.getParsedAccountInfo(statePda[0]);
     if (accountInfo.value == null) {
         throw new Error(`There is no account ${statePda[0]}`);
     }
     let state = loadState(accountInfo.value);
 
-    let payerAtaPub = spl.getAssociatedTokenAddressSync(paymentTokenMint, PAYER.publicKey);
-    let payerAtaAccount=  await connection.getAccountInfo(payerAtaPub);
-    if (payerAtaAccount == null) {
-        tx.add(spl.createAssociatedTokenAccountInstruction(
-            PAYER.publicKey,
-            payerAtaPub,
-            PAYER.publicKey,
-            paymentTokenMint,
-        ));
-    }
-
-    let amount = state.price * 3;
-
-    tx.add(spl.createApproveInstruction(
-        payerAtaPub,
-        PAYER.publicKey,
-        PAYER.publicKey,
-        amount
-    ));
-
-    let tokenId = Keypair.generate();
-    const rentExemptMintLamports = await spl.getMinimumBalanceForRentExemptMint(connection);
-
-    tx.add(
-        // create token account
-        SystemProgram.createAccount({
-            fromPubkey: PAYER.publicKey,
-            newAccountPubkey: tokenId.publicKey,
-            space: spl.MINT_SIZE,
-            lamports: rentExemptMintLamports,
-            programId: spl.TOKEN_PROGRAM_ID,
-        }),
-
-        // initialize token account
-        spl.createInitializeMintInstruction(
-            tokenId.publicKey,
-            0,
-            vaultPda[0],
-            vaultPda[0],
-            spl.TOKEN_PROGRAM_ID
-        ),
-    )
-
-    let destinationAta = spl.getAssociatedTokenAddressSync(tokenId.publicKey, PAYER.publicKey);
-    tx.add(
-        // create destination account (ATA)
-        spl.createAssociatedTokenAccountInstruction(
-            PAYER.publicKey,
-            destinationAta,
-            PAYER.publicKey,
-            tokenId.publicKey
-        )
-    );
+    let destinationAta = spl.getAssociatedTokenAddressSync(ticketPda, PAYER.publicKey);
+    tx.add(ComputeBudgetProgram.setComputeUnitLimit({units: 300_000}));
 
     let umiContext = umiBundle
         .createUmi(connection)
         .use(keypairIdentity(fromWeb3JsKeypair(PAYER)));
 
-    let tokenMetadataPda = mpl.findMetadataPda(umiContext, {mint: fromWeb3JsPublicKey(tokenId.publicKey)});
-    let tokenMasterPda = mpl.findMasterEditionPda(umiContext, {mint: fromWeb3JsPublicKey(tokenId.publicKey)});
+    let tokenMetadataPda = mpl.findMetadataPda(umiContext, {mint: fromWeb3JsPublicKey(ticketPda)});
+    let tokenMasterPda = mpl.findMasterEditionPda(umiContext, {mint: fromWeb3JsPublicKey(ticketPda)});
     let mplId = toWeb3JsPublicKey(mpl.MPL_TOKEN_METADATA_PROGRAM_ID);
 
-    let buy = new Buy;
+    let instructionData = new ObtainTicket(
+        ticketBump,
+        ticketId,
+        expiredAt,
+        signature
+    );
 
     tx.add(new TransactionInstruction({
             programId: programId,
             keys: [
                 {pubkey: PAYER.publicKey, isWritable: false, isSigner: true},
-                {pubkey: vaultPda[0], isWritable: true, isSigner: false},
-                {pubkey: statePda[0], isWritable: true, isSigner: false},
-                {pubkey: payerAtaPub, isWritable: true, isSigner: false},
                 {pubkey: destinationAta, isWritable: true, isSigner: false},
-                {pubkey: tokenId.publicKey, isWritable: true, isSigner: true},
+                {pubkey: statePda[0], isWritable: true, isSigner: false},
+                {pubkey: vaultPda[0], isWritable: false, isSigner: false},
+                {pubkey: ticketPda, isWritable: true, isSigner: false},
                 {pubkey: toWeb3JsPublicKey(tokenMetadataPda["0"]), isWritable: true, isSigner: false},
                 {pubkey: toWeb3JsPublicKey(tokenMasterPda["0"]), isWritable: true, isSigner: false},
                 {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
@@ -115,11 +78,11 @@ export async function buy(connection: Connection, programId: PublicKey, paymentT
                 {pubkey: mplId, isWritable: false, isSigner: false},
                 {pubkey: spl.ASSOCIATED_TOKEN_PROGRAM_ID, isWritable: false, isSigner: false},
             ],
-            data: Buffer.from(serializeBuy(buy)),
+            data: Buffer.from(serializeObtainTicket(instructionData)),
         }
     ));
 
-    let hash = await sendAndConfirmTransaction(connection, tx, [PAYER, tokenId]);
+    let hash = await sendAndConfirmTransaction(connection, tx, [PAYER]);
     console.log("tx hash: " + hash);
 
     // reload account

@@ -6,8 +6,9 @@ use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
 use crate::state::StateVersion::Version1;
 
-pub const STATE_SEED: &[u8] = b"state";
+pub const STATE_SEED: &[u8] = b"state2";
 pub const VAULT: &[u8] = b"vault";
+pub const TICKET: &[u8] = b"ticket";
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct StateV1 {
@@ -30,10 +31,11 @@ pub struct State {
     pub total_supply: u32,
     pub max_supply: u32,
     pub name: String,
-    pub signer: Pubkey,
+    pub signer: [u8; 33],
     pub price: u64,
     pub base_url: String,
-    pub payment_ata: Pubkey
+    pub payment_ata: Pubkey,
+    pub first_index: u32,
 }
 
 #[derive(Debug, PartialEq, BorshSerialize, BorshDeserialize)]
@@ -78,8 +80,8 @@ impl State {
 fn test_save_to() {
     let owner = Pubkey::new_unique();
     println!("Owner: {:?}", owner.to_bytes());
-    let signer = Pubkey::new_unique();
-    println!("Signer: {:?}", signer.to_bytes());
+    let signer = [0; 33];
+    println!("Signer: {:?}", signer);
     let payment_ata = Pubkey::new_unique();
     println!("Payment: {:?}", payment_ata.to_bytes());
 
@@ -93,7 +95,8 @@ fn test_save_to() {
         vault_bump: 255,
         price: 5,
         base_url: "https://example.com/".to_string(),
-        payment_ata
+        payment_ata,
+        first_index: 1
     };
 
     let mut buf: Vec<u8> = Vec::with_capacity(100);

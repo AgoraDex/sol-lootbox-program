@@ -21,7 +21,7 @@ pub fn initialize<'a>(program_id: &Pubkey,
                       state_bump: u8,
                       max_supply: u32,
                       name: &str,
-                      signer: &Pubkey,
+                      signer: [u8; 33],
                       system_account: &AccountInfo<'a>,
                       base_url: String,
 ) -> ProgramResult {
@@ -43,7 +43,11 @@ pub fn initialize<'a>(program_id: &Pubkey,
     Ok(())
 }
 
-fn create_vault<'a>(program_id: &Pubkey, admin: &AccountInfo<'a>, vault_pda: &AccountInfo<'a>, vault_bump: u8, system_account: &AccountInfo<'a>) -> ProgramResult {
+fn create_vault<'a>(program_id: &Pubkey,
+                    admin: &AccountInfo<'a>,
+                    vault_pda: &AccountInfo<'a>,
+                    vault_bump: u8,
+                    system_account: &AccountInfo<'a>) -> ProgramResult {
     let seed = [admin.key.as_ref(), VAULT, &[vault_bump]];
 
     let vault = &Pubkey::create_program_address(&seed, program_id)?;
@@ -51,6 +55,11 @@ fn create_vault<'a>(program_id: &Pubkey, admin: &AccountInfo<'a>, vault_pda: &Ac
     if vault_pda.key != vault {
         msg!("The vault key mismatch, seed is {:?}", seed);
         return Err(ProgramError::InvalidSeeds);
+    }
+
+    if !vault_pda.data_is_empty() || vault_pda.lamports() > 0 {
+        msg!("Vault account has already been created.");
+        return Ok(());
     }
 
     let rent = Rent::get()?.minimum_balance(0);
@@ -79,7 +88,7 @@ fn create_state<'a>(program_id: &Pubkey,
                     state_bump: u8,
                     max_supply: u32,
                     name: &str,
-                    signer: &Pubkey,
+                    signer: [u8; 33],
                     system_account: &AccountInfo<'a>,
                     vault_bump: u8,
                     base_url: String,
@@ -98,14 +107,15 @@ fn create_state<'a>(program_id: &Pubkey,
         max_supply,
         owner: *admin.key,
         name: name.to_string(),
-        signer: *signer,
+        signer,
         price,
         vault_bump,
         base_url,
-        payment_ata: *payment_ata.key
+        payment_ata: *payment_ata.key,
+        first_index: 0,
     };
     let len = state.serialized_len()?;
-    let lamports = Rent::get()?.minimum_balance(len);
+    let lamports = Rent::get()?.minimum_balance(len + 1024);
 
     invoke_signed(
         &create_account(
