@@ -3,7 +3,7 @@ import ts, {Signature} from "typescript";
 
 // Определение enum типов
 enum InstructionType {
-    Buy,
+    Buy = 1,
     Withdraw,
     ObtainTicket,
     Initialize = 255
@@ -32,9 +32,6 @@ export class Initialize {
 
 export class Buy {
     instruction: InstructionType = InstructionType.Buy;
-
-    constructor() {
-    }
 }
 
 export class ObtainTicket {
@@ -94,7 +91,7 @@ export function serializeInitialize(instruction: Initialize): Uint8Array {
     return borshSerialize(initializeSchema, instruction);
 }
 
-export function serializeBuy(instruction: Buy): Uint8Array {
+export function serializeBuy(instruction: Buy): Buffer {
     return borshSerialize(buySchema, instruction);
 }
 

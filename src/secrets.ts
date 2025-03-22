@@ -11,6 +11,7 @@ export const PAYER = Keypair.fromSecretKey(Uint8Array.from(secrets.payer_key.spl
 console.info("Payer: " + PAYER.publicKey);
 export const ADMIN = Keypair.fromSecretKey(Uint8Array.from(secrets.admin_key.split(",")));
 console.info("Admin: " + ADMIN.publicKey);
+console.info(`Old Admin: ${Keypair.fromSecretKey(Uint8Array.from(secrets.old_admin_key.split(","))).publicKey}`)
 
 const CUR_ADMIN_KEY = "admin_key";
 const OLD_ADMIN_PREFIX = "old_admin_"

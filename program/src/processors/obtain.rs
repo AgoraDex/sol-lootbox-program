@@ -105,7 +105,7 @@ fn verify_signature(buyer: &AccountInfo,
     if xy[0..31] != state.signer[1..32] || y_parity != state.signer[0] {
         msg!("Hash was: {:?}", message_hash.to_bytes());
         msg!("Signature verification failed: {:?}", xy);
-        return Err(CustomError::WrongVault.into());
+        return Err(CustomError::WrongSignature.into());
     }
 
     Ok(())

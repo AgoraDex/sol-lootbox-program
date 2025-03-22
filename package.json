@@ -5,9 +5,10 @@
   "main": "src/client.ts",
   "scripts": {
     "start": "npm run build -- -w",
-    "run": "npx ts-node src/client.ts",
+    "action": "npx ts-node src/client.ts",
     "build": "cd program && cargo build-bpf && cd ../",
-    "deploy": "solana program deploy program/target/deploy/sm.so"
+    "deploy": "solana program deploy program/target/deploy/sm.so",
+    "recovery": "solana program deploy --buffer recovery.json --program-id HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN program/target/deploy/sm.so"
   },
   "keywords": [
     "solana"

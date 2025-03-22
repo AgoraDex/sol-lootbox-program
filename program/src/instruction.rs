@@ -6,14 +6,14 @@ use solana_program::pubkey::Pubkey;
 #[derive(Clone, Debug, PartialEq, BorshSerialize, BorshDeserialize)]
 #[borsh(use_discriminant = true)]
 pub enum Instruction {
-    Buy = 0,
+    Buy = 1,
     Withdraw {
         ids: Vec<u32>,
         transfer_params: Vec<TransferParams>,
         expire_at: u32,
         signature: Signature
-    } = 1,
-    ObtainTicket(ObtainTicketParams) = 2,
+    } = 2,
+    ObtainTicket(ObtainTicketParams) = 3,
     MigrateToV2(MigrateToV2Params) = 253,
     AdminWithdraw {
         transfer_params: TransferParams

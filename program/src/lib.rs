@@ -31,18 +31,18 @@ fn process_instruction<'a>(
             let vault_pda = next_account_info(accounts_iter)?;
             let state_pda = next_account_info(accounts_iter)?;
             let destination_ata = next_account_info(accounts_iter)?;
-            let token_account = next_account_info(accounts_iter)?;
+            let nft_mint = next_account_info(accounts_iter)?;
             let metadata_pda = next_account_info(accounts_iter)?;
             let master_pda = next_account_info(accounts_iter)?;
-            let system_account = next_account_info(accounts_iter)?;
+            let system_program = next_account_info(accounts_iter)?;
             let sysvar_account = next_account_info(accounts_iter)?;
             let spl_program = next_account_info(accounts_iter)?;
             let mpl_program = next_account_info(accounts_iter)?;
             let ata_program = next_account_info(accounts_iter)?;
 
-            buy(program_id, payer, payer_ata, payment_ata, state_pda, vault_pda,
-                destination_ata, token_account, metadata_pda,
-                master_pda, system_account, sysvar_account, spl_program,
+            buy(program_id, payer, payer_ata, payment_ata, destination_ata, state_pda, vault_pda,
+                nft_mint, metadata_pda,
+                master_pda, system_program, sysvar_account, spl_program,
                 mpl_program, ata_program)?;
         }
         Instruction::Withdraw { .. } => {}

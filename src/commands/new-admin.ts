@@ -1,6 +1,5 @@
 import {Connection, Keypair, sendAndConfirmTransaction, SystemProgram, Transaction} from "@solana/web3.js";
 import {ADMIN, updateAdmin} from "../secrets";
-import {createTransferInstruction} from "@solana/spl-token";
 
 export async function newAdmin(connection: Connection) {
     let info = await connection.getAccountInfo(ADMIN.publicKey);

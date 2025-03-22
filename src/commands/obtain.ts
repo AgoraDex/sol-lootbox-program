@@ -1,5 +1,5 @@
 import {
-    ComputeBudgetInstruction, ComputeBudgetProgram,
+    ComputeBudgetProgram,
     Connection,
     PublicKey,
     sendAndConfirmTransaction,
@@ -12,15 +12,10 @@ import {loadState, STATE_SEED, TICKET_SEED, VAULT_SEED} from "../state";
 import {ObtainTicket, serializeObtainTicket, Signature} from "../instruction";
 import * as spl from "@solana/spl-token";
 import * as umiBundle from "@metaplex-foundation/umi-bundle-defaults";
+import * as web3 from "@solana/web3.js";
 import {keypairIdentity} from "@metaplex-foundation/umi";
 import {fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey} from "@metaplex-foundation/umi-web3js-adapters";
 import * as mpl from "@metaplex-foundation/mpl-token-metadata";
-
-// const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-
-const SYSVAR_INSTRUCTIONS_PUBKEY = new PublicKey(
-    'Sysvar1nstructions1111111111111111111111111',
-);
 
 export async function obtain(connection: Connection, programId: PublicKey, ticketId: number, expiredAt: number, signature: Signature) {
     const blockhashInfo = await connection.getLatestBlockhash();
@@ -73,7 +68,7 @@ export async function obtain(connection: Connection, programId: PublicKey, ticke
                 {pubkey: toWeb3JsPublicKey(tokenMetadataPda["0"]), isWritable: true, isSigner: false},
                 {pubkey: toWeb3JsPublicKey(tokenMasterPda["0"]), isWritable: true, isSigner: false},
                 {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
-                {pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isWritable: false, isSigner: false},
+                {pubkey: web3.SYSVAR_INSTRUCTIONS_PUBKEY, isWritable: false, isSigner: false},
                 {pubkey: spl.TOKEN_PROGRAM_ID, isWritable: false, isSigner: false},
                 {pubkey: mplId, isWritable: false, isSigner: false},
                 {pubkey: spl.ASSOCIATED_TOKEN_PROGRAM_ID, isWritable: false, isSigner: false},
@@ -92,5 +87,5 @@ export async function obtain(connection: Connection, programId: PublicKey, ticke
     }
     let changedState = loadState(accountInfo.value);
 
-    console.log(`total supply was ${state.total_supply}, but now is ${changedState.total_supply}`);
+    console.log(`total supply was ${state.totalSupply}, but now is ${changedState.totalSupply}`);
 }

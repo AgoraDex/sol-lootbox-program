@@ -108,7 +108,8 @@ fn accept_payment<'a>(
         &[
             buyer_ata.clone(),
             payment_ata.clone(),
-            spl_program.clone()
+            buyer.clone(),
+            spl_program.clone(),
         ],
         &[],
     )?;

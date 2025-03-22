@@ -1330,12 +1330,11 @@ dependencies = [
 
 [[package]]
 name = "sm"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "borsh 1.5.1",
  "libsecp256k1 0.7.1",
  "mpl-token-metadata",
- "num-derive 0.3.3",
  "solana-program",
  "spl-token",
  "thiserror",

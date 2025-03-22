@@ -1,6 +1,6 @@
 [package]
 name = "sm"
-version = "0.1.0"
+version = "0.3.0"
 edition = "2018"
 
 [lib]
@@ -11,7 +11,7 @@ solana-program = "1.18.18"
 spl-token = { version = "3.5.0", features = [ "no-entrypoint" ] }
 mpl-token-metadata = "4.1.2"
 thiserror = { version = "1.0.61" }
-num-derive = { version = "0.3" }
+#num-derive = { version = "0.3" }
 borsh = { version = "1.5.1" }
 libsecp256k1 = { version = "0.7.1"}
 #borsh-derive = { version = "1.5.1" }
