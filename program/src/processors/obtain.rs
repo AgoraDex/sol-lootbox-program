@@ -62,7 +62,7 @@ pub fn obtain_ticket<'a>(program_id: &Pubkey,
                metadata_pda, master_pda, destination_ata, system_program, sysvar_program,
                spl_program, mpl_program, ata_program, vault_pda, Some(&ticket_seed))?;
 
-    state.max_supply += 1;
+    state.total_supply += 1;
     state.save_to(state_pda)?;
 
     Ok(())

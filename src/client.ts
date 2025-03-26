@@ -10,6 +10,7 @@ import {buy} from "./commands/buy";
 import {createToken} from "./commands/create-token";
 import {obtain} from "./commands/obtain";
 import {Signature} from "./instruction";
+import {mintTokens} from "./commands/mint-tokens";
 
 const programId = new PublicKey("HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN");
 const usdcMint = new PublicKey("Bf8SC6jEMH2sZ5wTK8nKrc9MeKUDwjNNGfC1fFFKEckF");
@@ -134,7 +135,7 @@ const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
 async function main (argv: string[]) {
     if (argv.length < 3) {
-        throw new Error("Usage: npm run-script run <command> ...<opt-params>.");
+        throw new Error("Usage: npm run action <command> ...<opt-params>.");
     }
     switch (argv[2].toLowerCase()) {
         case "buy":
@@ -154,9 +155,16 @@ async function main (argv: string[]) {
         case "create-token":
             await createToken(connection)
             break;
+        case "mint-tokens":
+            if (argv.length != 5) {
+                throw new Error("Usage: npm run action mint-tokens <amount> <destination>.");
+            }
+            let amount = BigInt(argv[3]);
+            let destination = new PublicKey(argv[4]);
+            await mintTokens(connection, usdcMint, amount, destination);
         case "obtain-ticket":
             if (argv.length != 6) {
-                throw new Error("Usage: npm run-script run obtain-ticket <ticketId> <expiredAt> <signatureHex>.");
+                throw new Error("Usage: npm run action obtain-ticket <ticketId> <expiredAt> <signatureHex>.");
             }
             let ticketId = Number.parseInt(argv[3]);
             let expiredAt = Number.parseInt(argv[4]);
@@ -177,7 +185,7 @@ async function main (argv: string[]) {
             await obtain(connection, programId, ticketId, expiredAt, new Signature(v, rs.subarray(1)));
             break;
         default:
-            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin>");
+            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens>");
     }
 }
 

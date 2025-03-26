@@ -7,7 +7,7 @@
     "start": "npm run build -- -w",
     "action": "npx ts-node src/client.ts",
     "build": "cd program && cargo build-bpf && cd ../",
-    "deploy": "solana program deploy program/target/deploy/sm.so",
+    "deploy": "solana program deploy program/target/deploy/sm.so --program-id HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN",
     "recovery": "solana program deploy --buffer recovery.json --program-id HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN program/target/deploy/sm.so"
   },
   "keywords": [

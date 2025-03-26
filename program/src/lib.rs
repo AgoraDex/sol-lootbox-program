@@ -1,3 +1,4 @@
+use std::any::Any;
 use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint, entrypoint::ProgramResult, msg, pubkey::Pubkey};
 use crate::instruction::Instruction;
 use crate::processors::buy::buy;
@@ -22,7 +23,7 @@ fn process_instruction<'a>(
 
     msg!("Unpacking instructions");
     let instruction = Instruction::unpack(instruction_data)?;
-    msg!("Instruction: {:?}", instruction);
+    msg!("Instruction: {:?}", instruction.type_id());
     match instruction {
         Instruction::Buy {  } => {
             let payer = next_account_info(accounts_iter)?;
