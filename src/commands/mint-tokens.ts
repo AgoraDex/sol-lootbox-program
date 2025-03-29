@@ -11,6 +11,8 @@ export async function mintTokens(connection: Connection, mint: PublicKey, amount
         dest
     );
 
+    console.info(`ATA: ${payerAta.address.toBase58()}`)
+
     await mintTo(
         connection,
         ADMIN,
@@ -19,4 +21,7 @@ export async function mintTokens(connection: Connection, mint: PublicKey, amount
         ADMIN,
         amount
     );
+
+    console.info(`Mint ${amount} to ${payerAta.address.toBase58()} is done.`);
+
 }

@@ -162,6 +162,7 @@ async function main (argv: string[]) {
             let amount = BigInt(argv[3]);
             let destination = new PublicKey(argv[4]);
             await mintTokens(connection, usdcMint, amount, destination);
+            break;
         case "obtain-ticket":
             if (argv.length != 6) {
                 throw new Error("Usage: npm run action obtain-ticket <ticketId> <expiredAt> <signatureHex>.");
