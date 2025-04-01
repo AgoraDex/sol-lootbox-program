@@ -1,5 +1,4 @@
 import {
-    AccountMeta,
     Connection, Keypair,
     PublicKey,
     sendAndConfirmTransaction, SendTransactionError,

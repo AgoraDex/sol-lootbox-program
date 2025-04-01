@@ -8,6 +8,7 @@ export const TICKET_SEED = "ticket";
 export enum StateVersion {
     Version1 = 1,
     Version2,
+    Version3,
 }
 
 export class State {
@@ -22,6 +23,7 @@ export class State {
     baseUrl: string;
     paymentAta: Uint8Array;
     firstIndex: number;
+    withdrawCounter: number;
 
     constructor(version: StateVersion, owner: Uint8Array, vaultBump: number, totalSupply: number, maxSupply: number, name: string, signer: Uint8Array, price: bigint, baseUrl: string, paymentAta: Uint8Array, firstIndex: number) {
         this.version = version;
@@ -49,7 +51,8 @@ const schema = BorshSchema.Struct({
     price: BorshSchema.u64,
     baseUrl: BorshSchema.String,
     paymentAta: BorshSchema.Array(BorshSchema.u8, 32),
-    firstIndex: BorshSchema.u32,
+    // firstIndex: BorshSchema.u32,
+    withdrawCounter: BorshSchema.u32,
 });
 
 export function loadState(accountInfo: AccountInfo<Buffer | ParsedAccountData>): State {

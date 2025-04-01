@@ -1,26 +1,28 @@
-use std::ops::{Deref, DerefMut};
-use borsh::{BorshSerialize, BorshDeserialize};
-use solana_program::pubkey::Pubkey;
+use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
-use crate::state::StateVersion::Version1;
+use solana_program::pubkey::Pubkey;
+use std::cmp::PartialEq;
+use std::ops::{Deref, DerefMut};
 
 pub const STATE_SEED: &[u8] = b"state2";
 pub const VAULT: &[u8] = b"vault";
 pub const TICKET: &[u8] = b"ticket";
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct StateV1 {
+pub struct StateV2 {
     pub version: StateVersion,
     pub owner: Pubkey,
     pub vault_bump: u8,
     pub total_supply: u32,
     pub max_supply: u32,
     pub name: String,
-    pub signer: Pubkey,
+    pub signer: [u8; 33],
     pub price: u64,
-    pub base_url: String
+    pub base_url: String,
+    pub payment_ata: Pubkey,
+    pub first_index: u32,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
@@ -35,7 +37,8 @@ pub struct State {
     pub price: u64,
     pub base_url: String,
     pub payment_ata: Pubkey,
-    pub first_index: u32,
+    // pub first_index: u32,
+    pub withdraw_counter: u32, // used for synchronization
 }
 
 #[derive(Debug, PartialEq, BorshSerialize, BorshDeserialize)]
@@ -45,6 +48,7 @@ pub enum StateVersion {
     // Undefined = 0,
     Version1 = 1,
     Version2 = 2,
+    Version3 = 3,
 }
 
 impl State {
@@ -52,6 +56,11 @@ impl State {
         let version = state_pda.data.borrow()[0];
         // the first struct field is version, starting from 1; so the state has already used if it doesn't have 0
         version != 0
+    }
+
+    pub fn is_version_correct(state_pda: &AccountInfo) -> bool {
+        let version = state_pda.data.borrow()[0];
+        version == StateVersion::Version3 as u8
     }
 
     pub fn serialized_len(&self) -> Result<usize, ProgramError> {
@@ -86,7 +95,7 @@ fn test_save_to() {
     println!("Payment: {:?}", payment_ata.to_bytes());
 
     let state = State {
-        version: Version1,
+        version: StateVersion::Version3,
         owner,
         total_supply: 0,
         max_supply: 100,
@@ -96,7 +105,8 @@ fn test_save_to() {
         price: 5,
         base_url: "https://example.com/".to_string(),
         payment_ata,
-        first_index: 1
+        // first_index: 1,
+        withdraw_counter: 0,
     };
 
     let mut buf: Vec<u8> = Vec::with_capacity(100);

@@ -1,16 +1,17 @@
-use std::any::Any;
 use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint, entrypoint::ProgramResult, msg, pubkey::Pubkey};
 use crate::instruction::Instruction;
 use crate::processors::buy::buy;
 use crate::processors::initialize::initialize;
-use crate::processors::migrate::migrate_to_v2;
+use crate::processors::migrate::migrate_to_v3;
 use crate::processors::obtain::obtain_ticket;
+use crate::processors::withdraw::withdraw;
 
 mod instruction;
 mod error;
 mod processors;
 mod state;
 mod nft;
+mod verify;
 
 entrypoint!(process_instruction);
 
@@ -23,9 +24,9 @@ fn process_instruction<'a>(
 
     msg!("Unpacking instructions");
     let instruction = Instruction::unpack(instruction_data)?;
-    msg!("Instruction: {:?}", instruction.type_id());
+    msg!("Instruction: {:?}", instruction.name());
     match instruction {
-        Instruction::Buy {  } => {
+        Instruction::Buy => {
             let payer = next_account_info(accounts_iter)?;
             let payer_ata = next_account_info(accounts_iter)?;
             let payment_ata = next_account_info(accounts_iter)?;
@@ -46,7 +47,18 @@ fn process_instruction<'a>(
                 master_pda, system_program, sysvar_account, spl_program,
                 mpl_program, ata_program)?;
         }
-        Instruction::Withdraw { .. } => {}
+        Instruction::Withdraw(params) => {
+            let payer = next_account_info(accounts_iter)?;
+            let vault_pda = next_account_info(accounts_iter)?;
+            let state_pda = next_account_info(accounts_iter)?;
+            let system_program = next_account_info(accounts_iter)?;
+            let sysvar_account = next_account_info(accounts_iter)?;
+            let spl_program = next_account_info(accounts_iter)?;
+            let mpl_program = next_account_info(accounts_iter)?;
+
+            withdraw(program_id, payer, &params, state_pda, vault_pda, system_program,
+                     sysvar_account, spl_program, mpl_program, accounts_iter)?;
+        }
         Instruction::Initialize { vault_bump, state_bump, max_supply, signer, name, price, base_url } => {
             let admin = next_account_info(accounts_iter)?;
             let vault_pda = next_account_info(accounts_iter)?;
@@ -54,7 +66,6 @@ fn process_instruction<'a>(
             let system_account = next_account_info(accounts_iter)?;
             let payment_ata = next_account_info(accounts_iter)?;
 
-            msg!("Let's initialize it");
             initialize(program_id, admin, price, payment_ata, vault_pda, vault_bump,
                        state_pda, state_bump,
                        max_supply, name.as_str(), signer, system_account, base_url)?;
@@ -90,12 +101,11 @@ fn process_instruction<'a>(
                 ata_program,
             )?;
         }
-        Instruction::MigrateToV2(params) => {
+        Instruction::MigrateToV3(params) => {
             let admin = next_account_info(accounts_iter)?;
             let state_pda = next_account_info(accounts_iter)?;
-            let payment_ata = next_account_info(accounts_iter)?;
 
-            migrate_to_v2(program_id, admin, state_pda, payment_ata, params)?;
+            migrate_to_v3(program_id, admin, state_pda, params)?;
         }
         Instruction::AdminWithdraw { .. } => {}
     }

@@ -1,19 +1,19 @@
 use borsh::BorshDeserialize;
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
+use solana_program::msg;
 use solana_program::pubkey::Pubkey;
 
 use crate::error::CustomError;
-use crate::instruction::MigrateToV2Params;
-use crate::state::{State, STATE_SEED, StateV1};
-use crate::state::StateVersion::{Version1, Version2};
+use crate::instruction::MigrateToV3Params;
+use crate::state::StateVersion::Version3;
+use crate::state::{State, StateV2, STATE_SEED};
 
-pub fn migrate_to_v2<'a>(
+pub fn migrate_to_v3<'a>(
     program_id: &Pubkey,
     admin: &AccountInfo<'a>,
     state_pda: &AccountInfo<'a>,
-    payment_ata: &AccountInfo<'a>,
-    params: MigrateToV2Params,
+    params: MigrateToV3Params,
 ) -> ProgramResult {
     if !admin.is_signer {
         return Err(CustomError::WrongSigner.into());
@@ -27,40 +27,44 @@ pub fn migrate_to_v2<'a>(
     }
 
     if !State::if_initialized(state_pda) {
+        msg!("Wrong admin address.");
         return Err(CustomError::StateNotInitialized.into());
     }
 
-    let data = state_pda.data.borrow();
-    let mut buf: &[u8] = *data; // there was .deref();
-    let state_v1 = StateV1::deserialize(&mut buf)?;
+    msg!("Get old state.");
+    let old_state = {
+        let data = state_pda.data.borrow();
+        let mut buf: &[u8] = *data; // there was .deref();
+        StateV2::deserialize(&mut buf)
+    }?;
 
-    if state_v1.version != Version1 {
+    // TODO: use != Version2 (old)
+    if old_state.version == Version3 {
+        msg!("Wrong state version, expected != {:?} but got {:?}", Version3, old_state.version);
         return Err(CustomError::StateWrongVersion.into());
     }
 
-    if state_v1.owner != *admin.key {
+    if old_state.owner != *admin.key {
+        msg!("Wrong admin address.");
         return Err(CustomError::WrongAdminAccount.into())
     }
 
     let state = State {
-        version: Version2,
-        signer: params.signer,
-        max_supply: state_v1.max_supply,
-        name: state_v1.name,
-        total_supply: state_v1.total_supply,
-        owner: state_v1.owner,
-        vault_bump: state_v1.vault_bump,
-        price: state_v1.price,
-        base_url: state_v1.base_url,
-        payment_ata: *payment_ata.key,
-        first_index: params.first_index
+        version: Version3,
+        signer: old_state.signer,
+        max_supply: old_state.max_supply,
+        name: old_state.name,
+        total_supply: old_state.total_supply,
+        owner: old_state.owner,
+        vault_bump: old_state.vault_bump,
+        price: old_state.price,
+        base_url: old_state.base_url,
+        payment_ata: old_state.payment_ata,
+        // first_index: old_state.first_index,
+        withdraw_counter: 0,
     };
 
-    let required_len = state.serialized_len()?;
-    let exists_len = state_pda.data_len();
-    if required_len > exists_len {
-        return Err(CustomError::NotEnoughSpace.into())
-    }
+    msg!("Save migrated state.");
 
     state.save_to(state_pda)?;
 

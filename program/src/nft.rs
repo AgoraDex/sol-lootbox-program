@@ -1,10 +1,10 @@
-use mpl_token_metadata::instructions::{CreateV1CpiBuilder, MintCpiBuilder};
+use mpl_token_metadata::instructions::{CreateCpiBuilder, MintCpiBuilder};
 use mpl_token_metadata::programs::MPL_TOKEN_METADATA_ID;
-use mpl_token_metadata::types::{Creator, MintArgs, PrintSupply, TokenStandard};
-use solana_program::{msg, system_program};
+use mpl_token_metadata::types::{CreateArgs, Creator, MintArgs, PrintSupply, TokenStandard};
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
+use solana_program::{msg, system_program};
 
 use crate::state::{State, VAULT};
 
@@ -45,53 +45,43 @@ pub fn mint_token<'a>(state: &State,
         return Err(ProgramError::IncorrectProgramId);
     }
 
-    // invoke_signed(
-    //     &mint_to(
-    //         spl_program.key,
-    //         mint.key,
-    //         destination_ata.key,
-    //         vault.key,
-    //         &[],
-    //         1, // amount of minting tokens
-    //     )?,
-    //     &[
-    //         spl_program.clone(),
-    //         mint.clone(),
-    //         destination_ata.clone(),
-    //         vault.clone(),
-    //     ],
-    //     &[
-    //         &seed
-    //     ],
-    // )?;
-
     let uri = String::new() + &state.base_url + &mint.key.to_string();
     let name = String::new() + &state.name + " #" + &state.total_supply.to_string();
 
     msg!("Create mpl metadata.");
+    //
+    // CreateCpiBuilder::new(mpl_program)
+    //     .master_edition()
+    //     .invoke_signed(&seed);
 
-    CreateV1CpiBuilder::new(mpl_program)
+    CreateCpiBuilder::new(mpl_program)
         .metadata(metadata_pda)
         .master_edition(Some(master_pda))
         .payer(payer)
         .system_program(system_program)
         .authority(vault)
         .update_authority(vault, true)
-        .print_supply(PrintSupply::Zero)
-        .seller_fee_basis_points(600)
-        .uri(uri)
-        .name(name)
-        .symbol(state.name.clone())
-        // .is_mutable(false)
         .mint(mint, true)
-        .creators(vec![Creator {
-            address: *vault.key,
-            verified: true,
-            share: 100,
-        }])
-        // .master_edition(Some(master_edition_pda))
-        .decimals(0)
-        .token_standard(TokenStandard::NonFungible)
+        .create_args(CreateArgs::V1 {
+            name: name,
+            uri: uri,
+            symbol: state.name.clone(),
+            seller_fee_basis_points: 600,
+            primary_sale_happened: false,
+            is_mutable: false,
+            token_standard: TokenStandard::NonFungible,
+            collection: None,
+            collection_details: None,
+            creators: Some(vec![Creator {
+                address: *vault.key,
+                verified: true,
+                share: 100,
+            }]),
+            decimals: None,
+            print_supply: Some(PrintSupply::Zero),
+            rule_set: None,
+            uses: None,
+        })
         .spl_token_program(Some(spl_program))
         .sysvar_instructions(sysvar_instructions)
         .invoke_signed(&seed)?;
@@ -112,26 +102,6 @@ pub fn mint_token<'a>(state: &State,
         .mint_args(MintArgs::V1 {amount: 1, authorization_data: None})
         .spl_ata_program(ata_program)
         .invoke_signed(&seed)?;
-
-    // msg!("Lock the NFT 2.");
-    //
-    // // transfer ownership to None - lock the NFT
-    // invoke_signed(
-    //     &transfer_authority(
-    //         mint.key,
-    //         authority_pda.key,
-    //         None
-    //     ),
-    //     &[
-    //         token_program.clone(),
-    //         mint.clone(),
-    //         ata.clone(),
-    //         authority_pda.clone(),
-    //     ],
-    //     &[
-    //         &authority_seed
-    //     ]
-    // )?;
 
     Ok(())
 }

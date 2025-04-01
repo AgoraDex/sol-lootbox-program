@@ -102,7 +102,7 @@ fn create_state<'a>(program_id: &Pubkey,
     }
 
     let state = State {
-        version: StateVersion::Version1,
+        version: StateVersion::Version2,
         total_supply: 0,
         max_supply,
         owner: *admin.key,
@@ -112,7 +112,8 @@ fn create_state<'a>(program_id: &Pubkey,
         vault_bump,
         base_url,
         payment_ata: *payment_ata.key,
-        first_index: 0,
+        // first_index: 0,
+        withdraw_counter: 0,
     };
     let len = state.serialized_len()?;
     let lamports = Rent::get()?.minimum_balance(len + 1024);

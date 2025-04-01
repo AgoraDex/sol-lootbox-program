@@ -7,14 +7,9 @@ use solana_program::pubkey::Pubkey;
 #[borsh(use_discriminant = true)]
 pub enum Instruction {
     Buy = 1,
-    Withdraw {
-        ids: Vec<u32>,
-        transfer_params: Vec<TransferParams>,
-        expire_at: u32,
-        signature: Signature
-    } = 2,
+    Withdraw(WithdrawParam) = 2,
     ObtainTicket(ObtainTicketParams) = 3,
-    MigrateToV2(MigrateToV2Params) = 253,
+    MigrateToV3(MigrateToV3Params) = 253,
     AdminWithdraw {
         transfer_params: TransferParams
     } = 254,
@@ -30,10 +25,8 @@ pub enum Instruction {
 }
 
 #[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
-pub struct MigrateToV2Params {
+pub struct MigrateToV3Params {
     pub state_bump: u8,
-    pub signer: [u8; 33],
-    pub first_index: u32,
 }
 
 #[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
@@ -57,10 +50,29 @@ pub struct Signature {
     pub rs: [u8; 64],
 }
 
+#[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
+pub struct WithdrawParam {
+    pub expire_at: u32,
+    pub signature: Signature,
+    pub tickets: u8,
+    pub amounts: Vec<u64>, // 1 for NFT
+}
+
 impl Instruction {
     pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
         let instruction = Instruction::try_from_slice(input)?;
 
         Ok(instruction)
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Instruction::Buy => "Buy",
+            Instruction::Withdraw(_) => "Withdraw",
+            Instruction::ObtainTicket(_) => "ObtainTicket",
+            Instruction::MigrateToV3(_) => "MigrationToV3",
+            Instruction::AdminWithdraw { .. } => "AdminWithdraw",
+            Instruction::Initialize { .. } => "Initialize",
+        }
     }
 }

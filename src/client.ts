@@ -11,6 +11,9 @@ import {createToken} from "./commands/create-token";
 import {obtain} from "./commands/obtain";
 import {Signature} from "./instruction";
 import {mintTokens} from "./commands/mint-tokens";
+import {TokenAmount, withdraw} from "./commands/withdraw";
+import {migrate} from "./commands/migrate";
+import {mintNft} from "./commands/mint-nft";
 
 const programId = new PublicKey("HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN");
 const usdcMint = new PublicKey("Bf8SC6jEMH2sZ5wTK8nKrc9MeKUDwjNNGfC1fFFKEckF");
@@ -133,6 +136,24 @@ const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 //     // console.log("Dry run");
 // }
 
+function parseSignature(value: string): Signature {
+    if (!value.startsWith("0x") && !value.startsWith("0X")) {
+        throw new Error("Signature must be in hex format with '0x' prefix");
+    }
+    if (value.length != 65*2 + 2) {
+        throw new Error("Signature must be 65 bytes length.");
+    }
+    let vrs = Buffer.from(value.substring(2), "hex");
+    let v = vrs[0];
+    if (v > 3) {
+        // there might be 2 vector formats, 0,1,2,3 or 27,28 (Ethereum)
+        v = v - 27;
+    }
+    let rs = new Uint8Array(vrs);
+
+    return new Signature(v, rs.subarray(1));
+}
+
 async function main (argv: string[]) {
     if (argv.length < 3) {
         throw new Error("Usage: npm run action <command> ...<opt-params>.");
@@ -147,15 +168,44 @@ async function main (argv: string[]) {
         case "new-admin":
             await newAdmin(connection);
             break;
-        case "withdraw":
+        case "withdraw": {
+            if (argv.length != 7) {
+                throw new Error("Usage: npm run action withdraw <expiredAt> '[<ticketIds>,..]' '[{tokenMint: <mint>, amount: <amount>},..]' <signatureHex>.");
+            }
+            let expiredAt = Number.parseInt(argv[3]);
+            let ticketIdsRaw = JSON.parse(argv[4]);
+            let ticketIds: PublicKey[];
+            if (typeof ticketIdsRaw == "string") {
+                ticketIds = [new PublicKey(ticketIdsRaw)];
+            }
+            else if (Array.isArray(ticketIdsRaw)) {
+                ticketIds = ticketIdsRaw.map(s => new PublicKey(s));
+            }
+
+            let rewardsRaw = JSON.parse(argv[5]);
+            if (!Array.isArray(rewardsRaw)) {
+                throw new Error("Wrong 5th parameter, expected array of objects.");
+            }
+            let rewards = rewardsRaw.map(o => new TokenAmount(o.tokenMint, o.amount)) as TokenAmount[];
+
+            let signature = parseSignature(argv[6]);
+            await withdraw(
+                connection,
+                programId,
+                expiredAt,
+                ticketIds,
+                rewards,
+                signature
+            );
             break;
+        }
         case "console":
             await consoleCmd(connection);
             break;
         case "create-token":
             await createToken(connection)
             break;
-        case "mint-tokens":
+        case "mint-tokens": {
             if (argv.length != 5) {
                 throw new Error("Usage: npm run action mint-tokens <amount> <destination>.");
             }
@@ -163,30 +213,29 @@ async function main (argv: string[]) {
             let destination = new PublicKey(argv[4]);
             await mintTokens(connection, usdcMint, amount, destination);
             break;
+        }
         case "obtain-ticket":
             if (argv.length != 6) {
                 throw new Error("Usage: npm run action obtain-ticket <ticketId> <expiredAt> <signatureHex>.");
             }
             let ticketId = Number.parseInt(argv[3]);
             let expiredAt = Number.parseInt(argv[4]);
-            let signature = argv[5];
-            if (!signature.startsWith("0x") && !signature.startsWith("0X")) {
-                throw new Error("Signature must be in hex format with '0x' prefix");
-            }
-            if (signature.length != 65*2 + 2) {
-                throw new Error("Signature must be 65 bytes length.");
-            }
-            let vrs = Buffer.from(signature.substring(2), "hex");
-            let v = vrs[0];
-            if (v > 3) {
-                // there might be 2 vector formats, 0,1,2,3 or 27,28 (Ethereum)
-                v = v - 27;
-            }
-            let rs = new Uint8Array(vrs);
-            await obtain(connection, programId, ticketId, expiredAt, new Signature(v, rs.subarray(1)));
+            let signature = parseSignature(argv[5]);
+            await obtain(connection, programId, ticketId, expiredAt, signature);
             break;
+        case "migrate":
+            await migrate(connection, programId);
+            break;
+        case "mint-nft": {
+            if (argv.length != 4) {
+                throw new Error("Usage: npm run action mint-nft <destination>.");
+            }
+            let destination = new PublicKey(argv[3]);
+            await mintNft(connection, destination);
+            break;
+        }
         default:
-            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens>");
+            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft>");
     }
 }
 

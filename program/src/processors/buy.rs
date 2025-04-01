@@ -38,6 +38,11 @@ pub fn buy<'a>(program_id: &Pubkey,
         return Err(CustomError::StateNotInitialized.into());
     }
 
+    if !State::is_version_correct(state_pda) {
+        msg!("State has wrong version.");
+        return Err(CustomError::StateWrongVersion.into());
+    }
+
     let mut state = State::load_from(state_pda)?;
 
     if state.total_supply == state.max_supply {
@@ -47,7 +52,7 @@ pub fn buy<'a>(program_id: &Pubkey,
 
     let vault_pub = Pubkey::create_program_address(
         &[&state.owner.to_bytes(), VAULT, &[state.vault_bump]],
-        program_id
+        program_id,
     )?;
 
     if *vault_pda.key != vault_pub {
@@ -60,14 +65,24 @@ pub fn buy<'a>(program_id: &Pubkey,
         buyer,
         buyer_ata,
         payment_ata,
-        spl_program
+        spl_program,
     )?;
 
-    // secp256k1_recover()
-
-    mint_token(&state, buyer, ticket_mint,
-               metadata_pda, master_pda, destination_ata, system_program, sysvar_program,
-               spl_program, mpl_program, ata_program, vault_pda, Option::None)?;
+    mint_token(
+        &state,
+        buyer,
+        ticket_mint,
+        metadata_pda,
+        master_pda,
+        destination_ata,
+        system_program,
+        sysvar_program,
+        spl_program,
+        mpl_program,
+        ata_program,
+        vault_pda,
+        None,
+    )?;
 
     state.total_supply += 1;
     state.save_to(state_pda)?;
