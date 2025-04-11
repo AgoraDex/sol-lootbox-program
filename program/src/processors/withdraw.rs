@@ -1,6 +1,6 @@
 use std::slice::Iter;
 
-use mpl_token_metadata::instructions::BurnCpiBuilder;
+use mpl_token_metadata::instructions::{BurnCpi, BurnCpiBuilder, BurnInstructionArgs};
 use mpl_token_metadata::types::BurnArgs;
 use solana_program::account_info::{next_account_info, AccountInfo};
 use solana_program::entrypoint::ProgramResult;
@@ -85,14 +85,7 @@ fn burn_tickets<'a>(receiver: &AccountInfo<'a>,
                     mpl_program: &AccountInfo<'a>,
                     seed: &[&[u8]],
 ) -> ProgramResult {
-    let mut builder = BurnCpiBuilder::new(mpl_program);
-    builder.spl_token_program(spl_program)
-        .authority(receiver)
-        .burn_args(BurnArgs::V1 {amount: 1})
-        .sysvar_instructions(sysvar_program)
-        .system_program(system_program);
-
-    for _ in 0..count {
+    for i in 0..count {
         let ticket_mint = next_account_info(accounts_iter)?;
         hasher.hash(&ticket_mint.key.to_bytes());
 
@@ -100,12 +93,41 @@ fn burn_tickets<'a>(receiver: &AccountInfo<'a>,
         let metadata = next_account_info(accounts_iter)?;
         let mater_edition = next_account_info(accounts_iter)?;
 
-        builder
-            .mint(ticket_mint)
-            .token(ata)
-            .metadata(metadata)
-            .edition(Some(mater_edition))
-            .invoke_signed(&[seed])?;
+        // do not use heap too much
+        let burn_instruction = BurnCpi {
+            edition: Some(mater_edition),
+            system_program,
+            sysvar_instructions: sysvar_program,
+            authority: receiver,
+            spl_token_program: spl_program,
+            metadata,
+            mint: ticket_mint,
+            token: ata,
+            master_edition: None,
+            master_edition_mint: None,
+            master_edition_token: None,
+            edition_marker: None,
+            __args: BurnInstructionArgs {
+                burn_args: BurnArgs::V1 {amount: 1}
+            },
+            __program: mpl_program,
+            collection_metadata: None,
+            token_record: None,
+        };
+
+        burn_instruction.invoke_signed(&[seed])?;
+        //
+        // BurnCpiBuilder::new(mpl_program)
+        //     .spl_token_program(spl_program)
+        //     .authority(receiver)
+        //     .burn_args(BurnArgs::V1 {amount: 1})
+        //     .sysvar_instructions(sysvar_program)
+        //     .system_program(system_program)
+        //     .mint(ticket_mint)
+        //     .token(ata)
+        //     .metadata(metadata)
+        //     .edition(Some(mater_edition))
+        //     .invoke_signed(&[seed])?;
 
         // invoke_signed(
         //     &close_account(
