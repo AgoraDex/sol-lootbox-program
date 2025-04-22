@@ -5,7 +5,7 @@ import * as path from "path";
 const SECRETS_PATH = '../.secrets.json';
 const OLD_SECRETS_PATH = '../.secrets-old.json';
 
-const secrets = require(SECRETS_PATH);
+export const secrets = require(SECRETS_PATH);
 
 export const PAYER = Keypair.fromSecretKey(Uint8Array.from(secrets.payer_key.split(",")));
 console.info("Payer: " + PAYER.publicKey);

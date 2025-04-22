@@ -1,6 +1,6 @@
 use std::slice::Iter;
 
-use mpl_token_metadata::instructions::{BurnCpi, BurnCpiBuilder, BurnInstructionArgs};
+use mpl_token_metadata::instructions::{BurnCpi, BurnInstructionArgs};
 use mpl_token_metadata::types::BurnArgs;
 use solana_program::account_info::{next_account_info, AccountInfo};
 use solana_program::entrypoint::ProgramResult;
@@ -31,30 +31,13 @@ pub fn withdraw<'a>(program_id: &Pubkey,
         return Err(CustomError::WrongSigner.into());
     }
 
-    if !State::if_initialized(state_pda) {
-        msg!("State is not properly initialized.");
-        return Err(CustomError::StateNotInitialized.into());
-    }
+    let mut state = State::verify_and_load(program_id, state_pda, params.lootbox_id, None)?;
 
-    if !State::is_version_correct(state_pda) {
-        msg!("State has wrong version.");
-        return Err(CustomError::StateWrongVersion.into());
-    }
+    let vault_seed = [&state.owner.to_bytes(), VAULT, &[state.vault_bump]];
 
-    let mut state = State::load_from(state_pda)?;
-
-    let vault_pub = Pubkey::create_program_address(
-        &[&state.owner.to_bytes(), VAULT, &[state.vault_bump]],
-        program_id,
-    )?;
-
-    if *vault_pda.key != vault_pub {
-        msg!("Vault account doesn't match with pubkey from state.");
-        return Err(CustomError::WrongVault.into());
-    }
+    state.check_vault_with_seed(program_id, vault_pda, &vault_seed)?;
 
     let mut hasher = Hasher::default();
-    let vault_seed = [&state.owner.to_bytes(), VAULT, &[state.vault_bump]];
 
     burn_tickets(receiver, params.tickets, accounts_iter, &mut hasher, vault_pda, system_program, sysvar_program, spl_program, mpl_program, &vault_seed)?;
     transfer_tokens(&params.amounts, accounts_iter, &mut hasher, vault_pda, spl_program, &vault_seed)?;
@@ -85,7 +68,7 @@ fn burn_tickets<'a>(receiver: &AccountInfo<'a>,
                     mpl_program: &AccountInfo<'a>,
                     seed: &[&[u8]],
 ) -> ProgramResult {
-    for i in 0..count {
+    for _ in 0..count {
         let ticket_mint = next_account_info(accounts_iter)?;
         hasher.hash(&ticket_mint.key.to_bytes());
 

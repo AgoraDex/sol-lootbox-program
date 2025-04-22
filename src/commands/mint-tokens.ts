@@ -8,7 +8,8 @@ export async function mintTokens(connection: Connection, mint: PublicKey, amount
         connection,
         PAYER,
         mint,
-        dest
+        dest,
+        true
     );
 
     console.info(`ATA: ${payerAta.address.toBase58()}`)

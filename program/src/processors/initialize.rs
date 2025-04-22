@@ -1,5 +1,6 @@
 use std::convert::Into;
-use solana_program::account_info::AccountInfo;
+use std::slice::Iter;
+use solana_program::account_info::{next_account_info, AccountInfo};
 use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
 use solana_program::program::invoke_signed;
@@ -9,21 +10,16 @@ use solana_program::system_instruction::create_account;
 use solana_program::sysvar::rent::Rent;
 use solana_program::sysvar::Sysvar;
 use crate::error::CustomError;
-use crate::state::{State, STATE_SEED, StateVersion, VAULT};
+use crate::instruction::InitializeParams;
+use crate::state::{State, STATE_SEED, StateVersion, VAULT, Price};
 
 pub fn initialize<'a>(program_id: &Pubkey,
                       admin: &AccountInfo<'a>,
-                      price: u64,
-                      payment_ata: &AccountInfo<'a>,
                       vault_pda: &AccountInfo<'a>,
-                      vault_bump: u8,
                       state_pda: &AccountInfo<'a>,
-                      state_bump: u8,
-                      max_supply: u32,
-                      name: &str,
-                      signer: [u8; 33],
                       system_account: &AccountInfo<'a>,
-                      base_url: String,
+                      params: &InitializeParams,
+                      accounts_iter: &mut Iter<AccountInfo<'a>>,
 ) -> ProgramResult {
     if !admin.is_signer {
         return Err(CustomError::WrongSigner.into());
@@ -34,11 +30,10 @@ pub fn initialize<'a>(program_id: &Pubkey,
     }
 
     msg!("Creating vault.");
-    create_vault(program_id, admin, vault_pda, vault_bump, system_account)?;
+    create_vault(program_id, admin, vault_pda, params.vault_bump, system_account)?;
 
     msg!("Initializing state.");
-    create_state(program_id, admin, price, state_pda, state_bump, max_supply, name, signer,
-                 system_account, vault_bump, base_url, payment_ata)?;
+    create_state(program_id, admin, state_pda, system_account, params, accounts_iter)?;
 
     Ok(())
 }
@@ -83,17 +78,13 @@ fn create_vault<'a>(program_id: &Pubkey,
 
 fn create_state<'a>(program_id: &Pubkey,
                     admin: &AccountInfo<'a>,
-                    price: u64,
                     state_pda: &AccountInfo<'a>,
-                    state_bump: u8,
-                    max_supply: u32,
-                    name: &str,
-                    signer: [u8; 33],
                     system_account: &AccountInfo<'a>,
-                    vault_bump: u8,
-                    base_url: String,
-                    payment_ata: &AccountInfo) -> ProgramResult {
-    let seed = [&admin.key.to_bytes(), STATE_SEED, &[state_bump]];
+                    params: &InitializeParams,
+                    accounts_iter: &mut Iter<AccountInfo<'a>>,
+                    ) -> ProgramResult {
+    msg!("Get state address using id {} and bump {}", params.lootbox_id, params.state_bump);
+    let seed = [admin.key.as_ref(), STATE_SEED, &params.lootbox_id.to_be_bytes(), &[params.state_bump]];
     let state_pub = &Pubkey::create_program_address(&seed, program_id)?;
 
     if state_pda.key != state_pub {
@@ -101,29 +92,43 @@ fn create_state<'a>(program_id: &Pubkey,
         return Err(ProgramError::InvalidSeeds);
     }
 
+    if State::if_initialized(state_pda) {
+        return Err(CustomError::StateAlreadyInitialized.into());
+    }
+
+    msg!("Build prices set");
+    let mut prices: Vec<Price> = Vec::with_capacity(params.prices.len());
+    for amount in &params.prices {
+        let account = next_account_info(accounts_iter)?;
+        prices.push(Price {
+            amount: *amount,
+            ata: *account.key,
+        });
+    }
+
     let state = State {
-        version: StateVersion::Version2,
+        version: StateVersion::Version4,
+        id: params.lootbox_id,
         total_supply: 0,
-        max_supply,
+        max_supply: params.max_supply,
+        begin_ts: params.begin_ts,
+        end_ts: params.end_ts,
         owner: *admin.key,
-        name: name.to_string(),
-        signer,
-        price,
-        vault_bump,
-        base_url,
-        payment_ata: *payment_ata.key,
-        // first_index: 0,
+        name: params.name.clone(),
+        signer: params.signer,
+        prices,
+        vault_bump: params.vault_bump,
+        base_url: params.base_url.clone(),
         withdraw_counter: 0,
     };
-    let len = state.serialized_len()?;
-    let lamports = Rent::get()?.minimum_balance(len + 1024);
+    let lamports = Rent::get()?.minimum_balance(State::MAX_STATE_SIZE);
 
     invoke_signed(
         &create_account(
             admin.key,
             state_pub,
             lamports,
-            len as u64,
+            State::MAX_STATE_SIZE as u64,
             program_id,
         ),
         &[admin.clone(), state_pda.clone(), system_account.clone()],
@@ -132,9 +137,6 @@ fn create_state<'a>(program_id: &Pubkey,
         ],
     )?;
 
-    if State::if_initialized(state_pda) {
-        return Err(CustomError::StateAlreadyInitialized.into());
-    }
 
     state.save_to(state_pda)?;
 

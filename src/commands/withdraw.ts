@@ -9,7 +9,7 @@ import {
     TransactionInstruction, TransactionMessage, VersionedTransaction
 } from "@solana/web3.js";
 import {ADMIN, PAYER} from "../secrets";
-import {loadState, STATE_SEED, TICKET_SEED, VAULT_SEED} from "../state";
+import {findStateAddress, loadState, STATE_SEED, TICKET_SEED, VAULT_SEED} from "../state";
 import {ObtainTicket, serializeObtainTicket, serializeWithdraw, Signature, Withdraw} from "../instruction";
 import * as spl from "@solana/spl-token";
 import * as umiBundle from "@metaplex-foundation/umi-bundle-defaults";
@@ -33,12 +33,12 @@ export class TokenAmount {
 const ALT_ADDRESSES_LIMIT = 28;
 const MAX_TX_SIZE = web3.PACKET_DATA_SIZE;
 
-export async function withdraw(connection: Connection, programId: PublicKey, expiredAt: number, ticketIds: PublicKey[], tokenRewards: TokenAmount[], signature: Signature) {
+export async function withdraw(connection: Connection, programId: PublicKey, lootboxId: number, expiredAt: number, ticketIds: PublicKey[], tokenRewards: TokenAmount[], signature: Signature) {
     let blockhashInfo = await connection.getLatestBlockhash();
 
     let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId);
     console.info(`Vault: ${vaultPda}`);
-    let [statePda, stateBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(STATE_SEED)], programId);
+    let [statePda, stateBump] = findStateAddress(ADMIN.publicKey, lootboxId, programId);
 
     let accountInfo = await connection.getParsedAccountInfo(statePda);
     if (accountInfo.value == null) {
@@ -101,6 +101,7 @@ export async function withdraw(connection: Connection, programId: PublicKey, exp
     }
 
     let instructionData = new Withdraw(
+        lootboxId,
         ticketIds.length,
         amounts,
         expiredAt,
@@ -119,6 +120,7 @@ export async function withdraw(connection: Connection, programId: PublicKey, exp
 
     let txSize = getTxPossibleSize(blockhashInfo, [computeInstruction, ...ataInstructions, withdrawInstruction]);
     if (txSize > MAX_TX_SIZE) {
+        // TODO: do not use that, it's sucks; now we know that we can send more than one transaction, so it's much better to send multiple transactions.
         console.info(`Withdraw tx size ${txSize} > ${MAX_TX_SIZE}, lookup table is required`);
         lookupTableKey = await createAndFillAlt(connection, accounts);
 

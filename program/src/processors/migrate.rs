@@ -6,8 +6,7 @@ use solana_program::pubkey::Pubkey;
 
 use crate::error::CustomError;
 use crate::instruction::MigrateToV3Params;
-use crate::state::StateVersion::Version3;
-use crate::state::{State, StateV2, STATE_SEED};
+use crate::state::{State, StateVersion, STATE_SEED};
 
 pub fn migrate_to_v3<'a>(
     program_id: &Pubkey,
@@ -35,12 +34,12 @@ pub fn migrate_to_v3<'a>(
     let old_state = {
         let data = state_pda.data.borrow();
         let mut buf: &[u8] = *data; // there was .deref();
-        StateV2::deserialize(&mut buf)
+        State::deserialize(&mut buf)
     }?;
 
     // TODO: use != Version2 (old)
-    if old_state.version == Version3 {
-        msg!("Wrong state version, expected != {:?} but got {:?}", Version3, old_state.version);
+    if old_state.version != StateVersion::Version3 {
+        msg!("Wrong state version, expected != {:?} but got {:?}", StateVersion::Version3, old_state.version);
         return Err(CustomError::StateWrongVersion.into());
     }
 
@@ -50,18 +49,20 @@ pub fn migrate_to_v3<'a>(
     }
 
     let state = State {
-        version: Version3,
+        version: StateVersion::Version4,
+        id: old_state.id,
         signer: old_state.signer,
         max_supply: old_state.max_supply,
+        begin_ts: old_state.begin_ts,
+        end_ts: old_state.end_ts,
         name: old_state.name,
         total_supply: old_state.total_supply,
         owner: old_state.owner,
         vault_bump: old_state.vault_bump,
-        price: old_state.price,
+        prices: old_state.prices,
         base_url: old_state.base_url,
-        payment_ata: old_state.payment_ata,
         // first_index: old_state.first_index,
-        withdraw_counter: 0,
+        withdraw_counter: old_state.withdraw_counter,
     };
 
     msg!("Save migrated state.");

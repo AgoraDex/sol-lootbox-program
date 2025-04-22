@@ -1,5 +1,4 @@
 import {
-    clusterApiUrl,
     Connection,
     PublicKey,
 } from "@solana/web3.js";
@@ -14,9 +13,13 @@ import {mintTokens} from "./commands/mint-tokens";
 import {TokenAmount, withdraw} from "./commands/withdraw";
 import {migrate} from "./commands/migrate";
 import {mintNft} from "./commands/mint-nft";
+import {secrets} from "./secrets";
+import {updateState} from "./commands/update-state";
 
 const programId = new PublicKey("HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN");
 const usdcMint = new PublicKey("Bf8SC6jEMH2sZ5wTK8nKrc9MeKUDwjNNGfC1fFFKEckF");
+const borgMint = new PublicKey("CVGgUEBWVbKNipC7o37txsDeAyuqG1CMJYiEouReYPg3");
+const lootboxId = 5;
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
 
@@ -27,7 +30,7 @@ const usdcMint = new PublicKey("Bf8SC6jEMH2sZ5wTK8nKrc9MeKUDwjNNGfC1fFFKEckF");
     return this.toString();
 };
 
-const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+const connection = new Connection(`https://side-special-sunset.solana-devnet.quiknode.pro/${secrets.quick_node_key}`, "confirmed");
 
 // async function main1() {
 //     const blockhashInfo = await connection.getLatestBlockhash();
@@ -160,10 +163,10 @@ async function main (argv: string[]) {
     }
     switch (argv[2].toLowerCase()) {
         case "buy":
-            await buy(connection, programId, usdcMint);
+            await buy(connection, programId, lootboxId, borgMint);
             break;
         case "init":
-            await init(connection, programId, usdcMint);
+            await init(connection, programId, lootboxId, usdcMint, borgMint);
             break;
         case "new-admin":
             await newAdmin(connection);
@@ -192,6 +195,7 @@ async function main (argv: string[]) {
             await withdraw(
                 connection,
                 programId,
+                lootboxId,
                 expiredAt,
                 ticketIds,
                 rewards,
@@ -221,10 +225,13 @@ async function main (argv: string[]) {
             let ticketId = Number.parseInt(argv[3]);
             let expiredAt = Number.parseInt(argv[4]);
             let signature = parseSignature(argv[5]);
-            await obtain(connection, programId, ticketId, expiredAt, signature);
+            await obtain(connection, programId, lootboxId, ticketId, expiredAt, signature);
             break;
         case "migrate":
-            await migrate(connection, programId);
+            await migrate(connection, programId, lootboxId);
+            break;
+        case "update-state":
+            await updateState(connection, programId, lootboxId);
             break;
         case "mint-nft": {
             if (argv.length != 4) {

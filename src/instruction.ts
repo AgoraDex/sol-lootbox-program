@@ -5,33 +5,59 @@ enum InstructionType {
     Buy = 1,
     Withdraw,
     ObtainTicket,
+    UpdateState = 252,
     Migrate = 253,
     AdminWithdraw = 254,
     Initialize = 255,
 }
 
 export class Initialize {
+    readonly static SCHEMA = BorshSchema.Struct({
+        instruction: BorshSchema.u8,
+        lootboxId: BorshSchema.u16,
+        vaultBump: BorshSchema.u8,
+        stateBump: BorshSchema.u8,
+        maxSupply: BorshSchema.u32,
+        beginTs: BorshSchema.u32,
+        endTs: BorshSchema.u32,
+        signer: BorshSchema.Array(BorshSchema.u8, 33),
+        name: BorshSchema.String,
+        prices: BorshSchema.Vec(BorshSchema.u64),
+        baseUrl: BorshSchema.String,
+    });
+
     instruction: InstructionType = InstructionType.Initialize;
-    vault_bump: number;
-    state_bump: number;
-    max_supply: number;
+    lootboxId: number;
+    vaultBump: number;
+    stateBump: number;
+    maxSupply: number;
+    beginTs: number;
+    endTs: number;
     signer: Uint8Array;
     name: string;
-    price: number;
-    base_url: string;
+    prices: number[];
+    baseUrl: string;
 
-    constructor(vault_bump: number, state_bump: number, max_supply: number, signer: Uint8Array, name: string, price: number, base_url: string) {
-        this.vault_bump = vault_bump;
-        this.state_bump = state_bump;
-        this.max_supply = max_supply;
+    constructor(lootboxId: number, vaultBump: number, stateBump: number, maxSupply: number, beginTs: number, endTs: number, signer: Uint8Array, name: string, prices: number[], baseUrl: string) {
+        this.lootboxId = lootboxId;
+        this.vaultBump = vaultBump;
+        this.stateBump = stateBump;
+        this.maxSupply = maxSupply;
+        this.beginTs = beginTs;
+        this.endTs = endTs;
         this.signer = signer;
         this.name = name;
-        this.price = price;
-        this.base_url = base_url;
+        this.prices = prices;
+        this.baseUrl = baseUrl;
     }
 }
 
 export class Migrate {
+    readonly static SCHEMA = BorshSchema.Struct({
+        instruction: BorshSchema.u8,
+        stateBump: BorshSchema.u8,
+    });
+
     instruction: InstructionType = InstructionType.Migrate;
     stateBump: number
 
@@ -40,41 +66,47 @@ export class Migrate {
     }
 }
 
+export class UpdateState {
+    readonly static SCHEMA = BorshSchema.Struct({
+        instruction: BorshSchema.u8,
+        lootboxId: BorshSchema.u16,
+        stateBump: BorshSchema.u8,
+        maxSupply: BorshSchema.u32,
+    });
+
+    instruction: InstructionType = InstructionType.UpdateState;
+    lootboxId: number;
+    stateBump: number;
+    maxSupply: number;
+
+    constructor(lootboxId: number, stateBump: number, maxSupply: number) {
+        this.lootboxId = lootboxId;
+        this.stateBump = stateBump;
+        this.maxSupply = maxSupply;
+    }
+}
+
 export class Buy {
+    readonly static SCHEMA = BorshSchema.Struct({
+        instruction: BorshSchema.u8,
+        lootboxId: BorshSchema.u16,
+    });
+
     instruction: InstructionType = InstructionType.Buy;
-}
+    lootboxId: number;
 
-export class ObtainTicket {
-    instruction: InstructionType = InstructionType.ObtainTicket;
-    ticketBump: number;
-    ticketId: number;
-    expireAt: number;
-    signature: Signature;
-
-    constructor(ticketBump: number, ticketId: number, expireAt: number, signature: Signature) {
-        this.ticketBump = ticketBump;
-        this.ticketId = ticketId;
-        this.expireAt = expireAt;
-        this.signature = signature;
+    constructor(lootboxId: number) {
+        this.lootboxId = lootboxId;
     }
 }
 
-export class Withdraw {
-    instruction: InstructionType = InstructionType.Withdraw;
-    tickets: number;
-    amounts: number[];
-    expireAt: number;
-    signature: Signature;
-
-    constructor(tickets: number, amounts: number[], expireAt: number, signature: Signature) {
-        this.tickets = tickets;
-        this.amounts = amounts;
-        this.expireAt = expireAt;
-        this.signature = signature;
-    }
-}
 
 export class Signature {
+    readonly static SCHEMA = BorshSchema.Struct({
+        recId: BorshSchema.u8,
+        rs: BorshSchema.Array(BorshSchema.u8, 64),
+    });
+
     recId: number;
     rs: Uint8Array;
 
@@ -84,63 +116,78 @@ export class Signature {
     }
 }
 
-const initializeSchema = BorshSchema.Struct({
-    instruction: BorshSchema.u8,
-    vault_bump: BorshSchema.u8,
-    state_bump: BorshSchema.u8,
-    max_supply: BorshSchema.u32,
-    signer: BorshSchema.Array(BorshSchema.u8, 33),
-    name: BorshSchema.String,
-    price: BorshSchema.u64,
-    base_url: BorshSchema.String,
-});
+export class ObtainTicket {
+    readonly static SCHEMA = BorshSchema.Struct({
+        instruction: BorshSchema.u8,
+        lootboxId: BorshSchema.u16,
+        ticketBump: BorshSchema.u8,
+        ticketId: BorshSchema.u32,
+        expireAt: BorshSchema.u32,
+        signature: Signature.SCHEMA,
+    });
 
-const migrateSchema = BorshSchema.Struct({
-    instruction: BorshSchema.u8,
-    stateBump: BorshSchema.u8,
-});
+    instruction: InstructionType = InstructionType.ObtainTicket;
+    lootboxId: number;
+    ticketBump: number;
+    ticketId: number;
+    expireAt: number;
+    signature: Signature;
 
-const buySchema = BorshSchema.Struct({
-    instruction: BorshSchema.u8,
-});
+    constructor(lootboxId: number, ticketBump: number, ticketId: number, expireAt: number, signature: Signature) {
+        this.lootboxId = lootboxId;
+        this.ticketBump = ticketBump;
+        this.ticketId = ticketId;
+        this.expireAt = expireAt;
+        this.signature = signature;
+    }
+}
 
-const signatureSchema = BorshSchema.Struct({
-    recId: BorshSchema.u8,
-    rs: BorshSchema.Array(BorshSchema.u8, 64),
-});
+export class Withdraw {
+    readonly static SCHEMA = BorshSchema.Struct({
+        instruction: BorshSchema.u8,
+        lootboxId: BorshSchema.u16,
+        expireAt: BorshSchema.u32,
+        signature: Signature.SCHEMA,
+        tickets: BorshSchema.u8,
+        amounts: BorshSchema.Vec(BorshSchema.u64),
+    });
 
-const obtainTicketSchema = BorshSchema.Struct({
-    instruction: BorshSchema.u8,
-    ticketBump: BorshSchema.u8,
-    ticketId: BorshSchema.u32,
-    expireAt: BorshSchema.u32,
-    signature: signatureSchema
-});
+    instruction: InstructionType = InstructionType.Withdraw;
+    lootboxId: number;
+    tickets: number;
+    amounts: number[];
+    expireAt: number;
+    signature: Signature;
 
-const withdrawSchema = BorshSchema.Struct({
-    instruction: BorshSchema.u8,
-    expireAt: BorshSchema.u32,
-    signature: signatureSchema,
-    tickets: BorshSchema.u8,
-    amounts: BorshSchema.Vec(BorshSchema.u64),
-});
+    constructor(lootboxId: number, tickets: number, amounts: number[], expireAt: number, signature: Signature) {
+        this.lootboxId = lootboxId;
+        this.tickets = tickets;
+        this.amounts = amounts;
+        this.expireAt = expireAt;
+        this.signature = signature;
+    }
+}
 
 export function serializeInitialize(instruction: Initialize): Uint8Array {
-    return borshSerialize(initializeSchema, instruction);
+    return borshSerialize(Initialize.SCHEMA, instruction);
 }
 
 export function serializeBuy(instruction: Buy): Buffer {
-    return borshSerialize(buySchema, instruction);
+    return borshSerialize(Buy.SCHEMA, instruction);
 }
 
 export function serializeObtainTicket(instruction: ObtainTicket): Uint8Array {
-    return borshSerialize(obtainTicketSchema, instruction);
+    return borshSerialize(ObtainTicket.SCHEMA, instruction);
 }
 
 export function serializeWithdraw(instruction: Withdraw): Uint8Array {
-    return borshSerialize(withdrawSchema, instruction);
+    return borshSerialize(Withdraw.SCHEMA, instruction);
 }
 
 export function serializeMigrate(instruction: Migrate): Uint8Array {
-    return borshSerialize(migrateSchema, instruction);
+    return borshSerialize(Migrate.SCHEMA, instruction);
+}
+
+export function serializeUpdateState(instruction: UpdateState): Uint8Array {
+    return borshSerialize(UpdateState.SCHEMA, instruction);
 }

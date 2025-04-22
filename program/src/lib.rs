@@ -4,6 +4,7 @@ use crate::processors::buy::buy;
 use crate::processors::initialize::initialize;
 use crate::processors::migrate::migrate_to_v3;
 use crate::processors::obtain::obtain_ticket;
+use crate::processors::update_state::update_state;
 use crate::processors::withdraw::withdraw;
 
 mod instruction;
@@ -26,7 +27,7 @@ fn process_instruction<'a>(
     let instruction = Instruction::unpack(instruction_data)?;
     msg!("Instruction: {:?}", instruction.name());
     match instruction {
-        Instruction::Buy => {
+        Instruction::Buy(params) => {
             let payer = next_account_info(accounts_iter)?;
             let payer_ata = next_account_info(accounts_iter)?;
             let payment_ata = next_account_info(accounts_iter)?;
@@ -45,7 +46,7 @@ fn process_instruction<'a>(
             buy(program_id, payer, payer_ata, payment_ata, destination_ata, state_pda, vault_pda,
                 nft_mint, metadata_pda,
                 master_pda, system_program, sysvar_account, spl_program,
-                mpl_program, ata_program)?;
+                mpl_program, ata_program, params.lootbox_id)?;
         }
         Instruction::Withdraw(params) => {
             let payer = next_account_info(accounts_iter)?;
@@ -59,16 +60,13 @@ fn process_instruction<'a>(
             withdraw(program_id, payer, &params, state_pda, vault_pda, system_program,
                      sysvar_account, spl_program, mpl_program, accounts_iter)?;
         }
-        Instruction::Initialize { vault_bump, state_bump, max_supply, signer, name, price, base_url } => {
+        Instruction::Initialize(params) => {
             let admin = next_account_info(accounts_iter)?;
             let vault_pda = next_account_info(accounts_iter)?;
             let state_pda = next_account_info(accounts_iter)?;
             let system_account = next_account_info(accounts_iter)?;
-            let payment_ata = next_account_info(accounts_iter)?;
 
-            initialize(program_id, admin, price, payment_ata, vault_pda, vault_bump,
-                       state_pda, state_bump,
-                       max_supply, name.as_str(), signer, system_account, base_url)?;
+            initialize(program_id, admin, vault_pda, state_pda, system_account, &params, accounts_iter)?;
         }
         Instruction::ObtainTicket(params) => {
             let payer = next_account_info(accounts_iter)?;
@@ -106,6 +104,13 @@ fn process_instruction<'a>(
             let state_pda = next_account_info(accounts_iter)?;
 
             migrate_to_v3(program_id, admin, state_pda, params)?;
+        }
+        Instruction::UpdateState(params) => {
+            let admin = next_account_info(accounts_iter)?;
+            let state_pda = next_account_info(accounts_iter)?;
+
+            update_state(program_id, admin, state_pda, params)?;
+
         }
         Instruction::AdminWithdraw { .. } => {}
     }

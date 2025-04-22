@@ -7,10 +7,10 @@ use thiserror::Error;
 #[repr(u32)]
 pub enum CustomError {
     #[error("Certain signer account was expected.")]
-    WrongSigner = 1000,
+    WrongSigner = 4096,
     #[error("Certain admin account was expected.")]
     WrongAdminAccount,
-    #[error("The state for the specified admin account has been already initialized.")]
+    #[error("The specified state has been already initialized.")]
     StateAlreadyInitialized,
     #[error("The specified state wasn't initialized.")]
     StateNotInitialized,
@@ -24,7 +24,7 @@ pub enum CustomError {
     WrongVault,
     #[error("Wrong state address.")]
     WrongState,
-    #[error("Wrong payment ata.")]
+    #[error("The specified payment ATA was not found.")]
     WrongPaymentAta,
     #[error("The account's data has not enough space.")]
     NotEnoughSpace,
@@ -34,6 +34,10 @@ pub enum CustomError {
     SignatureExpired,
     #[error("Signature doesn't match with the specified parameters.")]
     WrongSignature,
+    #[error("It's too early for that action.")]
+    TooEarly,
+    #[error("It's too late for that action.")]
+    TooLate,
 }
 
 impl From<CustomError> for ProgramError {

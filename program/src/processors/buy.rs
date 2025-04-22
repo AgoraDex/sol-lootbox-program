@@ -1,16 +1,18 @@
 use std::convert::Into;
 
 use solana_program::account_info::AccountInfo;
+use solana_program::clock::Clock;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
 use solana_program::program::invoke_signed;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 use spl_token::instruction::transfer;
+use solana_program::sysvar::Sysvar;
 
 use crate::error::CustomError;
 use crate::nft::mint_token;
-use crate::state::{State, VAULT};
+use crate::state::State;
 
 pub fn buy<'a>(program_id: &Pubkey,
                buyer: &AccountInfo<'a>,
@@ -27,38 +29,18 @@ pub fn buy<'a>(program_id: &Pubkey,
                spl_program: &AccountInfo<'a>,
                mpl_program: &AccountInfo<'a>,
                ata_program: &AccountInfo<'a>,
+               lootbox_id: u16,
 ) -> ProgramResult {
     if !buyer.is_signer {
         msg!("Buyer must be signer.");
         return Err(CustomError::WrongSigner.into());
     }
 
-    if !State::if_initialized(state_pda) {
-        msg!("State is not properly initialized.");
-        return Err(CustomError::StateNotInitialized.into());
-    }
+    let mut state = State::verify_and_load(program_id,  state_pda, lootbox_id, None)?;
 
-    if !State::is_version_correct(state_pda) {
-        msg!("State has wrong version.");
-        return Err(CustomError::StateWrongVersion.into());
-    }
-
-    let mut state = State::load_from(state_pda)?;
-
-    if state.total_supply == state.max_supply {
-        msg!("state.total_supply == state.max_supply");
-        return Err(CustomError::MaxSupplyReached.into());
-    }
-
-    let vault_pub = Pubkey::create_program_address(
-        &[&state.owner.to_bytes(), VAULT, &[state.vault_bump]],
-        program_id,
-    )?;
-
-    if *vault_pda.key != vault_pub {
-        msg!("Vault account doesn't match with pubkey from state.");
-        return Err(CustomError::WrongVault.into());
-    }
+    state.check_supply()?;
+    state.check_vault(program_id, vault_pda)?;
+    state.check_time(&Clock::get()?)?;
 
     accept_payment(
         &state,
@@ -99,10 +81,7 @@ fn accept_payment<'a>(
 ) -> ProgramResult {
     // let seed = [&state.owner.to_bytes(), VAULT, &[state.vault_bump]];
 
-    if state.payment_ata != *payment_ata.key {
-        msg!("wrong payment_ata value");
-        return Err(CustomError::WrongPaymentAta.into());
-    }
+    let amount = state.find_price(payment_ata)?;
 
     if !spl_token::check_id(spl_program.key) {
         msg!("Wrong SPL token program id");
@@ -118,7 +97,7 @@ fn accept_payment<'a>(
             payment_ata.key,
             buyer.key,
             &[],
-            state.price,
+            amount,
         )?,
         &[
             buyer_ata.clone(),

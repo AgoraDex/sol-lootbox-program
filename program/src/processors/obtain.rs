@@ -1,9 +1,11 @@
 use crate::error::CustomError;
 use crate::instruction::ObtainTicketParams;
 use crate::nft::mint_token;
-use crate::state::{State, TICKET, VAULT};
+use crate::state::{State, TICKET};
 use crate::verify::verify_signature;
 use solana_program::account_info::AccountInfo;
+use solana_program::clock::Clock;
+use solana_program::sysvar::Sysvar;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::hash::Hasher;
 use solana_program::msg;
@@ -29,36 +31,15 @@ pub fn obtain_ticket<'a>(program_id: &Pubkey,
         return Err(CustomError::WrongSigner.into());
     }
 
-    if !State::if_initialized(state_pda) {
-        msg!("State is not properly initialized.");
-        return Err(CustomError::StateNotInitialized.into());
-    }
+    let mut state = State::verify_and_load(program_id, state_pda, params.lootbox_id, None)?;
 
-    if !State::is_version_correct(state_pda) {
-        msg!("State has wrong version.");
-        return Err(CustomError::StateWrongVersion.into());
-    }
-
-    let mut state = State::load_from(state_pda)?;
-
-    if state.total_supply == state.max_supply {
-        msg!("state.total_supply == state.max_supply");
-        return Err(CustomError::MaxSupplyReached.into());
-    }
-
-    let vault_pub = Pubkey::create_program_address(
-        &[&state.owner.to_bytes(), VAULT, &[state.vault_bump]],
-        program_id,
-    )?;
-
-    if *vault_pda.key != vault_pub {
-        msg!("Vault account doesn't match with pubkey from state.");
-        return Err(CustomError::WrongVault.into());
-    }
+    state.check_supply()?;
+    state.check_vault(program_id, vault_pda)?;
+    state.check_time(&Clock::get()?)?;
 
     let message_hash = {
         let mut hasher = Hasher::default();
-        // TODO: think is it good idea, maybe state is better, because the same vault might be used for multiple lootboxes
+        // TODO: it will be replaced with server side signature
         hasher.hash(&vault_pda.key.to_bytes());
         hasher.hash(&buyer.key.to_bytes());
         hasher.hash(&params.id.to_be_bytes());
