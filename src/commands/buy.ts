@@ -7,7 +7,7 @@ import {
     TransactionInstruction
 } from "@solana/web3.js";
 import {ADMIN, PAYER} from "../secrets";
-import {loadState, STATE_SEED, VAULT_SEED} from "../state";
+import {findStateAddress, loadState, VAULT_SEED} from "../state";
 import {Buy, serializeBuy} from "../instruction";
 import * as spl from "@solana/spl-token";
 import * as umiBundle from "@metaplex-foundation/umi-bundle-defaults";
@@ -16,15 +16,13 @@ import {keypairIdentity} from "@metaplex-foundation/umi";
 import {fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey} from "@metaplex-foundation/umi-web3js-adapters";
 import * as mpl from "@metaplex-foundation/mpl-token-metadata";
 
-export async function buy(connection: Connection, programId: PublicKey, paymentTokenMint: PublicKey) {
+export async function buy(connection: Connection, programId: PublicKey, lootboxId: number, paymentTokenMint: PublicKey) {
     const blockHashInfo = await connection.getLatestBlockhash();
     let tx = new Transaction(blockHashInfo);
-    let programInfo = await connection.getAccountInfo(programId);
-    programInfo?.data.length
 
     let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId);
     console.info(`Vault: ${vaultPda}`);
-    let [statePda, stateBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(STATE_SEED)], programId);
+    let [statePda, stateBump] = findStateAddress(ADMIN.publicKey, lootboxId, programId);
     console.info(`State: ${statePda}`);
 
     let accountInfo = await connection.getParsedAccountInfo(statePda);
@@ -36,12 +34,23 @@ export async function buy(connection: Connection, programId: PublicKey, paymentT
     // if a user has these token on the balance they must be on the ATA
     let payerAtaPub = spl.getAssociatedTokenAddressSync(paymentTokenMint, PAYER.publicKey);
     console.info(`Payer ATA: ${payerAtaPub}`);
-    let paymentAtaPub = new PublicKey(state.paymentAta);
+    let paymentAtaPub = spl.getAssociatedTokenAddressSync(paymentTokenMint, vaultPda, true);
     console.info(`Payment ATA: ${paymentAtaPub}`);
     let tokenBalance = await connection.getTokenAccountBalance(payerAtaPub);
 
     let ticketAmount = 3;
-    let amount = state.price * BigInt(ticketAmount);
+    let amount = null;
+    for (let price of state.prices) {
+        console.info(`Amount ${price.amount} sends to ${new PublicKey(price.ata)}`);
+        if (new PublicKey(price.ata).equals(paymentAtaPub)) {
+            amount = price.amount;
+            break;
+        }
+    }
+    if (amount == null) {
+        throw new Error(`There is no configured price with ata ${paymentAtaPub}.`);
+    }
+    let total = amount * BigInt(ticketAmount);
 
     console.info(`Payment token: ${paymentTokenMint}, balance: ${tokenBalance.value.amount}, credit: ${amount}`)
 
@@ -49,7 +58,7 @@ export async function buy(connection: Connection, programId: PublicKey, paymentT
         payerAtaPub,
         paymentAtaPub,
         PAYER.publicKey,
-        amount
+        total
     ));
 
     let umiContext = umiBundle
@@ -67,7 +76,7 @@ export async function buy(connection: Connection, programId: PublicKey, paymentT
         let tokenMasterPda = mpl.findMasterEditionPda(umiContext, {mint: fromWeb3JsPublicKey(ticketMint.publicKey)});
         let mplId = toWeb3JsPublicKey(mpl.MPL_TOKEN_METADATA_PROGRAM_ID);
 
-        let buy = new Buy;
+        let buy = new Buy(lootboxId);
 
         console.info(`buy: ${buy.instruction}, buy data: ${serializeBuy(buy).toString('hex')}`);
 

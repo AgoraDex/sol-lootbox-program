@@ -12,7 +12,7 @@ export async function createToken(connection: Connection) {
         6
     );
 
-    console.info("Test USDC token: " + mint.toBase58())
+    console.info("Test token: " + mint.toBase58())
 
     const payerAta = await getOrCreateAssociatedTokenAccount(
         connection,
