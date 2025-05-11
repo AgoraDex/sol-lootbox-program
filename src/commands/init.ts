@@ -30,12 +30,12 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
         lootboxId,
         vaultBump,
         stateBump,
-        500,
+        2000,
         Math.floor(now.getTime() / 1000),
         Math.floor(later.getTime() / 1000),
         new Uint8Array(signer),
-        "DLS 0.5",
-        [5_000_000, 10_000_000],
+        "Swissborg Solana v2",
+        [20_000_000],
         "https://lootbox-dev.agoradex.io/api/v1/m/SOLANA_DEVNET/"
     );
 
@@ -77,7 +77,7 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
                 {pubkey: statePda, isWritable: true, isSigner: false},
                 {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
                 {pubkey: paymentAta1, isWritable: false, isSigner: false},
-                {pubkey: paymentAta2, isWritable: false, isSigner: false},
+                // {pubkey: paymentAta2, isWritable: false, isSigner: false},
             ],
             data: Buffer.from(serializeInitialize(init)),
         })

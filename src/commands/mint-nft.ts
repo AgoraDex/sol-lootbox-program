@@ -23,10 +23,10 @@ export async function mintNft(connection: Connection, destination: PublicKey) {
 
     await createNft(umiContext, {
         mint,
-        name: 'Test NFT',
-        uri: `https://lootbox-dev.agoradex.io/api/v1/m/SOLANA_DEVNET/${mint.publicKey}`,
-        sellerFeeBasisPoints: percentAmount(6),
-        symbol: "TestNFT",
+        name: 'Test DeGod #4467',
+        uri: `https://metadata.degods.com/g/4466.json`,
+        sellerFeeBasisPoints: percentAmount(3.33),
+        symbol: "tDGOD",
     }).sendAndConfirm(umiContext);
 
     if (PAYER.publicKey == destination) {

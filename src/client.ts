@@ -15,11 +15,15 @@ import {migrate} from "./commands/migrate";
 import {mintNft} from "./commands/mint-nft";
 import {secrets} from "./secrets";
 import {updateState} from "./commands/update-state";
+import {transfer} from "./commands/transfer";
 
 const programId = new PublicKey("HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN");
 const usdcMint = new PublicKey("Bf8SC6jEMH2sZ5wTK8nKrc9MeKUDwjNNGfC1fFFKEckF");
 const borgMint = new PublicKey("CVGgUEBWVbKNipC7o37txsDeAyuqG1CMJYiEouReYPg3");
-const lootboxId = 2;
+const gnetMint = new PublicKey("3S3XeNPwrETmAQD2kpkrGwxRqwAn7jLidzdRXX1aCepg");
+const xbgMint = new PublicKey("G3bE5wX4fH2sFpjUbECxe62qMEK1V7kY6Ab9m2CG3mij");
+const borgyMint = new PublicKey("A3CmjFeRJ3864nJWcvy8J22vdUSLx3zRLifvCpqATLFz");
+const lootboxId = 3;
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
 
@@ -210,12 +214,13 @@ async function main (argv: string[]) {
             await createToken(connection)
             break;
         case "mint-tokens": {
-            if (argv.length != 5) {
-                throw new Error("Usage: npm run action mint-tokens <amount> <destination>.");
+            if (argv.length != 6) {
+                throw new Error("Usage: npm run action mint-tokens <mint> <amount> <destination>.");
             }
-            let amount = BigInt(argv[3]);
-            let destination = new PublicKey(argv[4]);
-            await mintTokens(connection, usdcMint, amount, destination);
+            let mint = new PublicKey(argv[3]);
+            let amount = BigInt(argv[4]);
+            let destination = new PublicKey(argv[5]);
+            await mintTokens(connection, mint, amount, destination);
             break;
         }
         case "obtain-ticket":
@@ -241,8 +246,19 @@ async function main (argv: string[]) {
             await mintNft(connection, destination);
             break;
         }
+        case "transfer": {
+            if (argv.length != 6) {
+                throw new Error("Usage: npm run action transfer <mint> <amount> <destination>.");
+            }
+            let mint = new PublicKey(argv[3]);
+            let amount = parseInt(argv[4]);
+            let destination = new PublicKey(argv[5]);
+
+            await transfer(connection, mint, amount, destination);
+            break;
+        }
         default:
-            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft>");
+            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer>");
     }
 }
 

@@ -7,13 +7,13 @@ import {
 } from "@solana/web3.js";
 import {ADMIN} from "../secrets";
 import {Migrate, serializeMigrate} from "../instruction";
-import {loadState, STATE_SEED, VAULT_SEED} from "../state";
+import {findStateAddress, loadState, STATE_SEED, VAULT_SEED} from "../state";
 
-export async function migrate(connection: Connection, programId: PublicKey) {
+export async function migrate(connection: Connection, programId: PublicKey, lootboxId: number) {
     const blockhashInfo = await connection.getLatestBlockhash();
     let tx = new Transaction(blockhashInfo);
     let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId)
-    let [statePda, stateBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(STATE_SEED)], programId)
+    let [statePda, stateBump] = findStateAddress(ADMIN.publicKey, lootboxId, programId);
 
     {
         let data = await connection.getParsedAccountInfo(statePda);

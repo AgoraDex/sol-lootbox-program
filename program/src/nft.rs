@@ -1,3 +1,4 @@
+use borsh::schema::Definition::Struct;
 use mpl_token_metadata::instructions::{CreateCpiBuilder, MintCpiBuilder};
 use mpl_token_metadata::programs::MPL_TOKEN_METADATA_ID;
 use mpl_token_metadata::types::{CreateArgs, Creator, MintArgs, PrintSupply, TokenStandard};
@@ -47,6 +48,7 @@ pub fn mint_token<'a>(state: &State,
 
     let uri = String::new() + &state.base_url + &mint.key.to_string();
     let name = String::new() + &state.name + " #" + &state.total_supply.to_string();
+    let symbol = String::new() + "ALB";
 
     msg!("Create mpl metadata.");
     //
@@ -65,7 +67,7 @@ pub fn mint_token<'a>(state: &State,
         .create_args(CreateArgs::V1 {
             name: name,
             uri: uri,
-            symbol: state.name.clone(),
+            symbol: symbol,
             seller_fee_basis_points: 600,
             primary_sale_happened: false,
             is_mutable: false,

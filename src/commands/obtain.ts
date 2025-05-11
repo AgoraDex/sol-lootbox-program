@@ -8,7 +8,7 @@ import {
     TransactionInstruction
 } from "@solana/web3.js";
 import {ADMIN, PAYER} from "../secrets";
-import {loadState, STATE_SEED, TICKET_SEED, VAULT_SEED} from "../state";
+import {findStateAddress, loadState, STATE_SEED, TICKET_SEED, VAULT_SEED} from "../state";
 import {ObtainTicket, serializeObtainTicket, Signature} from "../instruction";
 import * as spl from "@solana/spl-token";
 import * as umiBundle from "@metaplex-foundation/umi-bundle-defaults";
@@ -17,13 +17,13 @@ import {keypairIdentity} from "@metaplex-foundation/umi";
 import {fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey} from "@metaplex-foundation/umi-web3js-adapters";
 import * as mpl from "@metaplex-foundation/mpl-token-metadata";
 
-export async function obtain(connection: Connection, programId: PublicKey, ticketId: number, expiredAt: number, signature: Signature) {
+export async function obtain(connection: Connection, programId: PublicKey, lootboxId: number, ticketId: number, expiredAt: number, signature: Signature) {
     const blockhashInfo = await connection.getLatestBlockhash();
     const balanceForRentExemption = await connection.getMinimumBalanceForRentExemption(0);
     let tx = new Transaction(blockhashInfo);
     let vaultPda = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId);
     console.info(`Vault: ${vaultPda[0]}`);
-    let statePda = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(STATE_SEED)], programId);
+    let statePda = findStateAddress(ADMIN.publicKey, lootboxId, programId);
     console.info(`State: ${statePda[0]}`);
 
     console.info(`Ticket Id: ${ticketId}, Expired At: ${expiredAt}`);
@@ -51,6 +51,7 @@ export async function obtain(connection: Connection, programId: PublicKey, ticke
     let mplId = toWeb3JsPublicKey(mpl.MPL_TOKEN_METADATA_PROGRAM_ID);
 
     let instructionData = new ObtainTicket(
+        lootboxId,
         ticketBump,
         ticketId,
         expiredAt,
