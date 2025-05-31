@@ -1,0 +1,1 @@
+solana-verify verify-from-repo -u 'https://side-special-sunset.solana-mainnet.quiknode.pro/f2617d18184a15727d0ec4f8fdbde2fdc3349a5b' --keypair '/Users/valery/code/agora/sol-lootbox-program/ddd.json' --mount-path program https://github.com/AgoraDex/sol-lootbox-program --program-id 9eMe9ZfiBf8mtcB6RqP45xR4HRoYBRmfcR98EuxXba3X

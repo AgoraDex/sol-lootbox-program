@@ -20,7 +20,23 @@ pub fn update_state<'a>(
     msg!("Read state.");
     let mut state = State::verify_and_load(program_id, state_pda, params.lootbox_id, Some(params.state_bump))?;
 
-    state.max_supply = params.max_supply;
+    if state.owner != *admin.key {
+        msg!("Admin doesn't own the state.");
+        return Err(CustomError::WrongAdminAccount.into());
+    }
+
+    if params.is_max_supply() {
+        msg!("Update max_supply form {} to {}.", state.max_supply, params.max_supply);
+        state.max_supply = params.max_supply;
+    }
+    if params.is_begin_ts() {
+        msg!("Update begin_ts from {} to {}.", state.begin_ts, params.begin_ts);
+        state.begin_ts = params.begin_ts;
+    }
+    if params.is_end_ts() {
+        msg!("Update end_ts from {} to {}.", state.end_ts, params.end_ts);
+        state.end_ts = params.end_ts;
+    }
 
     msg!("Save state.");
     state.save_to(state_pda)?;

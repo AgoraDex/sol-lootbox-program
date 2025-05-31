@@ -12,7 +12,8 @@ pub enum Instruction {
     UpdateState(UpdateStateParams) = 252,
     MigrateToV3(MigrateToV3Params) = 253,
     AdminWithdraw {
-        transfer_params: TransferParams
+        lootbox_id: u16,
+        amount: u64
     } = 254,
     Initialize(InitializeParams) = 255,
 }
@@ -43,7 +44,32 @@ pub struct MigrateToV3Params {
 pub struct UpdateStateParams {
     pub state_bump: u8,
     pub lootbox_id: u16,
+    pub enabled_fields: u32,
     pub max_supply: u32,
+    pub begin_ts: u32,
+    pub end_ts: u32,
+}
+
+impl UpdateStateParams {
+    const MAX_SUPPLY: u32 = 1;
+    const BEGIN_TS: u32 = 2;
+    const END_TS: u32 = 4;
+
+    fn is_field(&self, flag: u32) -> bool {
+        (self.enabled_fields & flag) == flag
+    }
+
+    pub fn is_max_supply(&self) -> bool {
+        self.is_field(Self::MAX_SUPPLY)
+    }
+
+    pub fn is_begin_ts(&self) -> bool {
+        self.is_field(Self::BEGIN_TS)
+    }
+
+    pub fn is_end_ts(&self) -> bool {
+        self.is_field(Self::END_TS)
+    }
 }
 
 #[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
@@ -57,8 +83,6 @@ pub struct ObtainTicketParams {
 
 #[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
 pub struct TransferParams {
-    pub source_ata: Pubkey,
-    pub destination_ata: Pubkey,
     pub amount: u64
 }
 
