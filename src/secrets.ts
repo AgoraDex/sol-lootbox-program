@@ -1,21 +1,33 @@
 import {Keypair} from "@solana/web3.js";
 import * as fs from "fs";
 import * as path from "path";
+import bs58 from "bs58";
 
 const SECRETS_PATH = '../.secrets.json';
 const OLD_SECRETS_PATH = '../.secrets-old.json';
 
 export const secrets = require(SECRETS_PATH);
 
-export const PAYER = Keypair.fromSecretKey(Uint8Array.from(secrets.payer_key.split(",")));
+export const PAYER = readKey(secrets.payer_mainnet_key);
+// export const PAYER = readKey(secrets.payer_testnet_key);
 console.info("Payer: " + PAYER.publicKey);
-export const ADMIN = Keypair.fromSecretKey(Uint8Array.from(secrets.admin_key.split(",")));
+export const ADMIN = readKey(secrets.admin_mainnet_key);
+// export const ADMIN = readKey(secrets.admin_testnet_key);
 console.info("Admin: " + ADMIN.publicKey);
-console.info(`Old Admin: ${Keypair.fromSecretKey(Uint8Array.from(secrets.old_admin_key.split(","))).publicKey}`)
+// console.info(`Old Admin: ${Keypair.fromSecretKey(Uint8Array.from(secrets.old_admin_key.split(","))).publicKey}`)
 
 const CUR_ADMIN_KEY = "admin_key";
 const OLD_ADMIN_PREFIX = "old_admin_"
 const OLD_ADMIN_SUFFIX = "_key"
+
+function readKey(key: any): Keypair {
+    if (key.indexOf(",") != -1) {
+        return Keypair.fromSecretKey(Uint8Array.from(key.split(",")));
+    }
+    else {
+        return Keypair.fromSecretKey(bs58.decode(key));
+    }
+}
 
 export function updateAdmin(newKey: Keypair) {
     let keysCount = Object.keys(secrets).length;

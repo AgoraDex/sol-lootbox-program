@@ -168,6 +168,23 @@ export class Withdraw {
     }
 }
 
+export class AdminWithdraw {
+    readonly static SCHEMA = BorshSchema.Struct({
+        instruction: BorshSchema.u8,
+        lootboxId: BorshSchema.u16,
+        amount: BorshSchema.u64,
+    });
+
+    instruction: InstructionType = InstructionType.AdminWithdraw;
+    lootboxId: number;
+    amount: number;
+
+    constructor(lootboxId: number, amount: number) {
+        this.lootboxId = lootboxId;
+        this.amount = amount;
+    }
+}
+
 export function serializeInitialize(instruction: Initialize): Uint8Array {
     return borshSerialize(Initialize.SCHEMA, instruction);
 }
@@ -190,4 +207,8 @@ export function serializeMigrate(instruction: Migrate): Uint8Array {
 
 export function serializeUpdateState(instruction: UpdateState): Uint8Array {
     return borshSerialize(UpdateState.SCHEMA, instruction);
+}
+
+export function serializeAdminWithdraw(instruction: AdminWithdraw): Uint8Array {
+    return borshSerialize(AdminWithdraw.SCHEMA, instruction);
 }
