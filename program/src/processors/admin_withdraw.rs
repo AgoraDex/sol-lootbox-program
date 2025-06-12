@@ -41,7 +41,7 @@ pub fn admin_withdraw<'a>(program_id: &Pubkey,
             destination_ata.key,
             vault_pda.key,
             &[],
-            *amount,
+            amount,
         )?,
         &[
             source_ata.clone(),
