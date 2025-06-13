@@ -82,6 +82,7 @@ jobs:
           solana account -u ${{ vars.ENDPOINT }} admin-key.json || true
       - name: Deploy
         run: |
+          ls -al
           solana program deploy -u ${{ vars.ENDPOINT }} -k "admin-key.json" --program-id "program-key.json" "${{ env.ARTIFACT_NAME }}"
       - name: Drop secrets
         run:
