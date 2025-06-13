@@ -83,7 +83,7 @@ jobs:
       - name: Deploy
         run: |
           ls -al
-          solana program deploy -u ${{ vars.ENDPOINT }} -k "admin-key.json" --program-id "program-key.json" "${{ env.ARTIFACT_NAME }}"
+          solana program deploy -u ${{ vars.ENDPOINT }} -k "admin-key.json" --program-id "program-key.json" sm.so
       - name: Drop secrets
         run:
           rm -f *-key.json
