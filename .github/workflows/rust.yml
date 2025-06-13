@@ -25,4 +25,4 @@ jobs:
       - name: Prepare environment
         run: cargo install solana-verify
       - name: Build
-        run: solana-verify build program
+        run: solana-verify build "$(pwd)/program"
