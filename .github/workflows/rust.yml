@@ -47,7 +47,7 @@ jobs:
         with:
           path: |
             ~/.local
-          key: ${{ runner.os }}-solana-${{ SOLANA_VERSION }}
+          key: ${{ runner.os }}-solana-${{ env.SOLANA_VERSION }}
       - name: Install solana-cli
         run: sh -c "$(curl -sSfL https://release.anza.xyz/${{ env.SOLANA_VERSION }}/install)"
       - run: export PATH="/Users/test/.local/share/solana/install/active_release/bin:$PATH"
