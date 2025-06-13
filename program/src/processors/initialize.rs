@@ -121,7 +121,7 @@ fn create_state<'a>(program_id: &Pubkey,
         base_url: params.base_url.clone(),
         withdraw_counter: 0,
     };
-    let lamports = Rent::get()?.minimum_balance(State::MAX_STATE_SIZE);
+        let lamports = Rent::get()?.minimum_balance(State::MAX_STATE_SIZE);
 
     invoke_signed(
         &create_account(

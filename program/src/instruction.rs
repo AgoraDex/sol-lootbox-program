@@ -6,9 +6,9 @@ use solana_program::pubkey::Pubkey;
 #[derive(Clone, Debug, PartialEq, BorshSerialize, BorshDeserialize)]
 #[borsh(use_discriminant = true)]
 pub enum Instruction {
-    Buy(BuyParam) = 1,
     Withdraw(WithdrawParam) = 2,
     ObtainTicket(ObtainTicketParams) = 3,
+    Buy(BuyParam) = 4,
     UpdateState(UpdateStateParams) = 252,
     MigrateToV3(MigrateToV3Params) = 253,
     AdminWithdraw {
@@ -19,7 +19,9 @@ pub enum Instruction {
 }
 #[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
 pub struct BuyParam {
-    pub lootbox_id: u16
+    pub lootbox_id: u16,
+    pub ticket_bumps: Vec<u8>,
+    pub ticket_seed: u32,
 }
 #[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
 pub struct InitializeParams {

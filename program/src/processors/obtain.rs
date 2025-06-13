@@ -33,7 +33,7 @@ pub fn obtain_ticket<'a>(program_id: &Pubkey,
 
     let mut state = State::verify_and_load(program_id, state_pda, params.lootbox_id, None)?;
 
-    state.check_supply()?;
+    state.check_and_get_correct_count(1)?;
     state.check_vault(program_id, vault_pda)?;
     state.check_time(&Clock::get()?)?;
 
