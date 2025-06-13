@@ -9,7 +9,7 @@ env:
   SOLANA_VERSION: v2.1.2
   SOLANA_VERIFY_VERSION: 0.4.4
   ARTIFACT_NAME: sol-lootbox-program.so
-  DOCKER_CACHE: "$HOME/docker-cache"
+  DOCKER_CACHE_DIR: "$HOME/docker-cache"
   SOLANA_VERIFY_IMAGE: "solanafoundation/solana-verifiable-build@sha256:89cfdc265e1f0cb474dd18b728417830921dc11ba9138ebb26fe02ae6d53c06d"
   DOCKER_IMAGE_FILE: solana-verify-image.tgz
   DOCKER_VOLUME_NAME: program # must be the same as program's directory
@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            "${{ env.DOCKER_CACHE }}"
+            "${{ env.DOCKER_CACHE_DIR }}"
           key: ${{ runner.os }}-cargo-${{ env.SOLANA_VERIFY_IMAGE }}
 
       - name: Ensure cache dir exists
