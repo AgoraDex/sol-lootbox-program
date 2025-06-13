@@ -15,6 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Prepare environment
-        run: cargo install solana-verify --verbose
+        run: cargo install solana-verify
       - name: Build
-        run: solana-verify build --mount-path program
+        run: solana-verify build program
