@@ -60,15 +60,18 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: program/target/deploy/sm.so
-
+      - name: Debug docker image
+        run: docker image ls
       - name: Save image if not loaded
         if: ${{ steps.cache-docker.outputs.cache-hit != 'true' }}
         run: docker save -o "${{ env.DOCKER_IMAGE_FILE }}" "${{ env.SOLANA_VERIFY_IMAGE }}"
+      - name: Debug docker volume
+        run: docker volume ls
       - name: Save volume for future caching
         run: |
           docker run --rm -v ${{ env.DOCKER_VOLUME_NAME }}:/volume \
                      -v ${{ env.DOCKER_CACHE_DIR }}/${{ env.DOCKER_VOLUME_NAME }}:/backup alpine \
-            cp -r /volume/* /bakcup/
+            sh -c 'ls -al /volume; cp -r /volume/* /backup/'
   deploy:
     runs-on: ubuntu-latest
     needs: build
