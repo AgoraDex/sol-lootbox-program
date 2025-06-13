@@ -47,9 +47,9 @@ jobs:
         if: ${{ steps.cache-docker.outputs.cache-hit == 'true' }}
         run: docker load -i "${{ env.DOCKER_IMAGE_FILE }}"
 
-      - name: Save image
+      - name: Save image if not loaded
         if: ${{ steps.cache-docker.outputs.cache-hit != 'true' }}
-        run: docker save -o "${{ env.DOCKER_IMAGE_FILE }}" "${{ env.DOCKER_IMAGE_FILE }}"
+        run: docker save -o "${{ env.DOCKER_IMAGE_FILE }}" "${{ env.SOLANA_VERIFY_IMAGE }}"
 
       - name: Restore volume if cached
         if: ${{ steps.cache-docker.outputs.cache-hit == 'true' }}
