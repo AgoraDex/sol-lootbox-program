@@ -12,7 +12,6 @@ env:
   DOCKER_CACHE_DIR: "$HOME/docker-cache"
   SOLANA_VERIFY_IMAGE: "solanafoundation/solana-verifiable-build@sha256:89cfdc265e1f0cb474dd18b728417830921dc11ba9138ebb26fe02ae6d53c06d"
   DOCKER_IMAGE_FILE: solana-verify-image.tgz
-  DOCKER_VOLUME_NAME: program # must be the same as program's directory
 
 jobs:
   build:
@@ -25,7 +24,6 @@ jobs:
         with:
           path: |
             ~/.cargo
-            target
           key: ${{ runner.os }}-cargo-${{ env.SOLANA_VERIFY_VERSION }}
       - name: Check installed
         if: ${{ steps.cache-cargo.outputs.cache-hit == 'true' }}
@@ -39,6 +37,7 @@ jobs:
         with:
           path: |
             "${{ env.DOCKER_CACHE_DIR }}"
+            program/target
           key: ${{ runner.os }}-cargo-${{ env.SOLANA_VERIFY_IMAGE }}
 
       - name: Ensure cache dir exists
@@ -46,14 +45,6 @@ jobs:
       - name: Load Docker image if cached
         if: ${{ steps.cache-docker.outputs.cache-hit == 'true' }}
         run: docker load -i "${{ env.DOCKER_IMAGE_FILE }}"
-      - name: Restore volume if cached
-        if: ${{ steps.cache-docker.outputs.cache-hit == 'true' }}
-        run: |
-          docker volume create "${{ env.DOCKER_VOLUME_NAME }}"
-          docker run --rm -v ${{ env.DOCKER_VOLUME_NAME }}:/volume \
-                     -v ${{ env.DOCKER_CACHE_DIR }}/${{ env.DOCKER_VOLUME_NAME }}:/backup alpine \
-            cp -r /backup/* /volume/
-
       - name: Build
         run: solana-verify build "$(pwd)/program" -b "${{ env.SOLANA_VERIFY_IMAGE }}"
       - uses: actions/upload-artifact@v4
@@ -65,13 +56,6 @@ jobs:
       - name: Save image if not loaded
         if: ${{ steps.cache-docker.outputs.cache-hit != 'true' }}
         run: docker save -o "${{ env.DOCKER_IMAGE_FILE }}" "${{ env.SOLANA_VERIFY_IMAGE }}"
-      - name: Debug docker volume
-        run: docker volume ls
-      - name: Save volume for future caching
-        run: |
-          docker run --rm -v ${{ env.DOCKER_VOLUME_NAME }}:/volume \
-                     -v ${{ env.DOCKER_CACHE_DIR }}/${{ env.DOCKER_VOLUME_NAME }}:/backup alpine \
-            sh -c 'ls -al /volume; cp -r /volume/* /backup/'
   deploy:
     runs-on: ubuntu-latest
     needs: build
