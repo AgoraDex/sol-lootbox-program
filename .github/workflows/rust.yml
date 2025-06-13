@@ -9,13 +9,17 @@ env:
   SOLANA_VERSION: v2.1.2
   SOLANA_VERIFY_VERSION: 0.4.4
   ARTIFACT_NAME: sol-lootbox-program.so
+  DOCKER_CACHE: "$HOME/docker-cache"
+  SOLANA_VERIFY_IMAGE: "solanafoundation/solana-verifiable-build@sha256:89cfdc265e1f0cb474dd18b728417830921dc11ba9138ebb26fe02ae6d53c06d"
+  DOCKER_IMAGE_FILE: solana-verify-image.tgz
+  DOCKER_VOLUME_NAME: program # must be the same as program's directory
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Cache
+      - name: Cache cargo
         id: cache-cargo
         uses: actions/cache@v4
         with:
@@ -23,24 +27,50 @@ jobs:
             ~/.cargo
             target
           key: ${{ runner.os }}-cargo-${{ env.SOLANA_VERIFY_VERSION }}
-#      - name: Cache Docker images.
-#        uses: ScribeMD/docker-cache@0.5.0
-#        with:
-#          key: ${{ runner.os }}-docker-1
-      - uses: satackey/action-docker-layer-caching@v0.0.11
-        # Ignore the failure of a step and avoid terminating the job.
-        continue-on-error: true
       - name: Check installed
         if: ${{ steps.cache-cargo.outputs.cache-hit == 'true' }}
         run: cargo install --list
       - name: Install solana-verify
         run: cargo install solana-verify --version ${{ env.SOLANA_VERIFY_VERSION }}
+
+      - name: Cache docker
+        id: cache-docker
+        uses: actions/cache@v4
+        with:
+          path: |
+            "${{ env.DOCKER_CACHE }}"
+          key: ${{ runner.os }}-cargo-${{ env.SOLANA_VERIFY_IMAGE }}
+
+      - name: Ensure cache dir exists
+        run: mkdir -p "${{ env.DOCKER_CACHE_DIR }}"
+      - name: Load Docker image if cached
+        if: ${{ steps.cache-docker.outputs.cache-hit == 'true' }}
+        run: docker load -i "${{ env.DOCKER_IMAGE_FILE }}"
+
+      - name: Save image
+        if: ${{ steps.cache-docker.outputs.cache-hit != 'true' }}
+        run: docker save -o "${{ env.DOCKER_IMAGE_FILE }}" "${{ env.DOCKER_IMAGE_FILE }}"
+
+      - name: Restore volume if cached
+        if: ${{ steps.cache-docker.outputs.cache-hit == 'true' }}
+        run: |
+          docker volume create "${{ env.DOCKER_VOLUME_NAME }}"
+          docker run --rm -v ${{ env.DOCKER_VOLUME_NAME }}:/volume \
+                     -v ${{ env.DOCKER_CACHE_DIR }}/${{ env.DOCKER_VOLUME_NAME }}:/backup alpine \
+            cp -r /backup/* /volume/
+
       - name: Build
         run: solana-verify build "$(pwd)/program"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: program/target/deploy/sm.so
+
+      - name: Save volume for future caching
+        run: |
+          docker run --rm -v ${{ env.DOCKER_VOLUME_NAME }}:/volume \
+                     -v ${{ env.DOCKER_CACHE_DIR }}/${{ env.DOCKER_VOLUME_NAME }}:/backup alpine \
+            cp -r /volume/* /bakcup/
   deploy:
     runs-on: ubuntu-latest
     needs: build
