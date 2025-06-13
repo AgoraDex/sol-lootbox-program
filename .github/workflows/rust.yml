@@ -46,11 +46,6 @@ jobs:
       - name: Load Docker image if cached
         if: ${{ steps.cache-docker.outputs.cache-hit == 'true' }}
         run: docker load -i "${{ env.DOCKER_IMAGE_FILE }}"
-
-      - name: Save image if not loaded
-        if: ${{ steps.cache-docker.outputs.cache-hit != 'true' }}
-        run: docker save -o "${{ env.DOCKER_IMAGE_FILE }}" "${{ env.SOLANA_VERIFY_IMAGE }}"
-
       - name: Restore volume if cached
         if: ${{ steps.cache-docker.outputs.cache-hit == 'true' }}
         run: |
@@ -60,12 +55,15 @@ jobs:
             cp -r /backup/* /volume/
 
       - name: Build
-        run: solana-verify build "$(pwd)/program"
+        run: solana-verify build "$(pwd)/program" -b "${{ env.SOLANA_VERIFY_IMAGE }}"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: program/target/deploy/sm.so
 
+      - name: Save image if not loaded
+        if: ${{ steps.cache-docker.outputs.cache-hit != 'true' }}
+        run: docker save -o "${{ env.DOCKER_IMAGE_FILE }}" "${{ env.SOLANA_VERIFY_IMAGE }}"
       - name: Save volume for future caching
         run: |
           docker run --rm -v ${{ env.DOCKER_VOLUME_NAME }}:/volume \
