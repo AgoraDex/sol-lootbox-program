@@ -75,15 +75,14 @@ jobs:
           sh -c "$(curl -sSfL https://release.anza.xyz/${{ env.SOLANA_VERSION }}/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
       - name: Prepare secrets
-        continue-on-error: true
         run: |
           echo '${{ secrets.PROGRAM_KEY }}' > program-key.json
           echo '${{ secrets.ADMIN_KEY }}' > admin-key.json
-          solana account -u ${{ vars.ENDPOINT }} program-key.json
-          solana account -u ${{ vars.ENDPOINT }} admin-key.json
+          solana account -u ${{ vars.ENDPOINT }} program-key.json || true
+          solana account -u ${{ vars.ENDPOINT }} admin-key.json || true
       - name: Deploy
         run: |
-          solana program deploy -u ${{ vars.ENDPOINT }} -k "$HOME/admin-key.json" --program-id "$HOME/program-key.json" "${{ env.ARTIFACT_NAME }}"
+          solana program deploy -u ${{ vars.ENDPOINT }} -k "admin-key.json" --program-id "program-key.json" "${{ env.ARTIFACT_NAME }}"
       - name: Drop secrets
         run:
           rm -f *-key.json
