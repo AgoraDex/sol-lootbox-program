@@ -19,6 +19,7 @@ import {transfer} from "./commands/transfer";
 import {createAta} from "./commands/create-ata";
 import {getState} from "./commands/get-state";
 import {adminWithdraw} from "./commands/admin-withdraw";
+import {newKey} from "./commands/new-key";
 
 // const programId = new PublicKey("HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN");
 const programId = new PublicKey("9eMe9ZfiBf8mtcB6RqP45xR4HRoYBRmfcR98EuxXba3X");
@@ -182,8 +183,13 @@ async function main (argv: string[]) {
             await adminWithdraw(connection, programId, lootboxId, {tokenMint: mint, amount: amount});
             break;
         }
+        case "new-key": {
+            let prefix = argv[3];
+            await newKey(connection, prefix);
+            break;
+        }
         default:
-            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw>");
+            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw|new-key>");
     }
 }
 
