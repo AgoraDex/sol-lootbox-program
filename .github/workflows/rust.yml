@@ -51,8 +51,12 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: program/target/deploy/sm.so
-      - name: Debug docker image
-        run: docker image ls
+      - name: Cleanup key
+        run: |
+          ls -al program/target
+          find program/target
+          ls -al program/target/deploy/sm-keypair.json
+          rm -f program/target/deploy/sm-keypair.json
       - name: Save image if not loaded
         if: ${{ steps.cache-docker.outputs.cache-hit != 'true' }}
         run: docker save -o "${{ env.DOCKER_IMAGE_FILE }}" "${{ env.SOLANA_VERIFY_IMAGE }}"
