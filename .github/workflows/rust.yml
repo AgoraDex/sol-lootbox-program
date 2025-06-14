@@ -53,6 +53,8 @@ jobs:
           path: program/target/deploy/sm.so
       - name: Cleanup key
         run: |
+          echo $UID
+          sudo chown -R runner program
           ls -al program/target
           find program/target
           ls -al program/target/deploy/sm-keypair.json
