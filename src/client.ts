@@ -13,26 +13,14 @@ import {mintTokens} from "./commands/mint-tokens";
 import {TokenAmount, withdraw} from "./commands/withdraw";
 import {migrate} from "./commands/migrate";
 import {mintNft} from "./commands/mint-nft";
-import {secrets} from "./secrets";
 import {updateState} from "./commands/update-state";
 import {transfer} from "./commands/transfer";
 import {createAta} from "./commands/create-ata";
 import {getState} from "./commands/get-state";
 import {adminWithdraw} from "./commands/admin-withdraw";
 import {newKey} from "./commands/new-key";
+import {PARAMS} from "./parameters";
 
-// const programId = new PublicKey("HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN");
-const programId = new PublicKey("9eMe9ZfiBf8mtcB6RqP45xR4HRoYBRmfcR98EuxXba3X");
-// const usdcMint = new PublicKey("Bf8SC6jEMH2sZ5wTK8nKrc9MeKUDwjNNGfC1fFFKEckF");
-const usdcMint = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
-// const borgMint = new PublicKey("CVGgUEBWVbKNipC7o37txsDeAyuqG1CMJYiEouReYPg3");
-const borgMint = new PublicKey("3dQTr7ror2QPKQ3GbBCokJUmjErGg8kTJzdnYjNfvi3Z");
-const gnetMint = new PublicKey("3S3XeNPwrETmAQD2kpkrGwxRqwAn7jLidzdRXX1aCepg");
-// const xbgMint = new PublicKey("G3bE5wX4fH2sFpjUbECxe62qMEK1V7kY6Ab9m2CG3mij");
-const xbgMint = new PublicKey("XBGdqJ9P175hCC1LangCEyXWNeCPHaKWA17tymz2PrY");
-// const borgyMint = new PublicKey("A3CmjFeRJ3864nJWcvy8J22vdUSLx3zRLifvCpqATLFz");
-const borgyMint = new PublicKey("BorGY4ub2Fz4RLboGxnuxWdZts7EKhUTB624AFmfCgX");
-const lootboxId = 1;
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
 
@@ -43,8 +31,7 @@ const lootboxId = 1;
     return this.toString();
 };
 
-// const connection = new Connection(`https://side-special-sunset.solana-devnet.quiknode.pro/${secrets.quick_node_key}`, "confirmed");
-const connection = new Connection(`https://side-special-sunset.solana-mainnet.quiknode.pro/${secrets.quick_node_key}`, "confirmed");
+const connection = new Connection(PARAMS.endpoint, "confirmed");
 
 function parseSignature(value: string): Signature {
     if (!value.startsWith("0x") && !value.startsWith("0X")) {
@@ -70,10 +57,10 @@ async function main (argv: string[]) {
     }
     switch (argv[2].toLowerCase()) {
         case "buy":
-            await buy(connection, programId, lootboxId, borgMint);
+            await buy(connection, PARAMS.programId, PARAMS.lootboxId, PARAMS.borgMint);
             break;
         case "init":
-            await init(connection, programId, lootboxId, usdcMint, borgMint);
+            await init(connection, PARAMS.programId, PARAMS.lootboxId, PARAMS.usdcMint, PARAMS.borgMint);
             break;
         case "new-admin":
             await newAdmin(connection);

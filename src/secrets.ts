@@ -2,16 +2,17 @@ import {Keypair} from "@solana/web3.js";
 import * as fs from "fs";
 import * as path from "path";
 import bs58 from "bs58";
+import {PROFILE} from "./profile";
 
 const SECRETS_PATH = '../.secrets.json';
 const OLD_SECRETS_PATH = '../.secrets-old.json';
 
 export const secrets = require(SECRETS_PATH);
 
-export const PAYER = readKey(secrets.payer_mainnet_key);
+export const PAYER = readKey(secrets[`payer_${PROFILE}_key`]);
 // export const PAYER = readKey(secrets.payer_testnet_key);
 console.info("Payer: " + PAYER.publicKey);
-export const ADMIN = readKey(secrets.admin_mainnet_key);
+export const ADMIN = readKey(secrets[`admin_${PROFILE}_key`]);
 // export const ADMIN = readKey(secrets.admin_testnet_key);
 console.info("Admin: " + ADMIN.publicKey);
 // console.info(`Old Admin: ${Keypair.fromSecretKey(Uint8Array.from(secrets.old_admin_key.split(","))).publicKey}`)

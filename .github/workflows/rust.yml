@@ -62,8 +62,7 @@ jobs:
           rm -f program/target/deploy/sm-keypair.json
       - name: Save image if file doesn't exist
         run: |
-          [ -e "${{ env.DOCKER_CACHE_DIR }}/${{ env.DOCKER_IMAGE_FILE }}" ] || \ 
-          docker save -o "${{ env.DOCKER_CACHE_DIR }}/${{ env.DOCKER_IMAGE_FILE }}" "${{ env.SOLANA_VERIFY_IMAGE }}"
+          [ -e "${{ env.DOCKER_CACHE_DIR }}/${{ env.DOCKER_IMAGE_FILE }}" ] || docker save -o "${{ env.DOCKER_CACHE_DIR }}/${{ env.DOCKER_IMAGE_FILE }}" "${{ env.SOLANA_VERIFY_IMAGE }}"
   deploy:
     runs-on: ubuntu-latest
     needs: build

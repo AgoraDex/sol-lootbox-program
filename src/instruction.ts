@@ -2,9 +2,11 @@ import { BorshSchema, borshSerialize, borshDeserialize, Unit } from 'borsher';
 
 // Определение enum типов
 enum InstructionType {
-    Buy = 1,
-    Withdraw,
+    OldBuy = 1,
+    OldWithdraw,
     ObtainTicket,
+    Buy = 4,
+    Withdraw = 5,
     UpdateState = 252,
     Migrate = 253,
     AdminWithdraw = 254,
@@ -12,7 +14,7 @@ enum InstructionType {
 }
 
 export class Initialize {
-    readonly static SCHEMA = BorshSchema.Struct({
+    static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
         lootboxId: BorshSchema.u16,
         vaultBump: BorshSchema.u8,
@@ -53,7 +55,7 @@ export class Initialize {
 }
 
 export class Migrate {
-    readonly static SCHEMA = BorshSchema.Struct({
+    static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
         stateBump: BorshSchema.u8,
     });
@@ -67,7 +69,7 @@ export class Migrate {
 }
 
 export class UpdateState {
-    readonly static SCHEMA = BorshSchema.Struct({
+    static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
         lootboxId: BorshSchema.u16,
         stateBump: BorshSchema.u8,
@@ -87,22 +89,29 @@ export class UpdateState {
 }
 
 export class Buy {
-    readonly static SCHEMA = BorshSchema.Struct({
+    static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
         lootboxId: BorshSchema.u16,
+        ticketBumps: BorshSchema.Vec(BorshSchema.u8),
+        ticketSeed: BorshSchema.u32,
     });
 
     instruction: InstructionType = InstructionType.Buy;
     lootboxId: number;
+    ticketBumps: Array<number>;
+    ticketSeed: number;
 
-    constructor(lootboxId: number) {
+
+    constructor(lootboxId: number, ticketBumps: Array<number>, ticketSeed: number) {
         this.lootboxId = lootboxId;
+        this.ticketBumps = ticketBumps;
+        this.ticketSeed = ticketSeed;
     }
 }
 
 
 export class Signature {
-    readonly static SCHEMA = BorshSchema.Struct({
+    static readonly SCHEMA = BorshSchema.Struct({
         recId: BorshSchema.u8,
         rs: BorshSchema.Array(BorshSchema.u8, 64),
     });
@@ -117,7 +126,7 @@ export class Signature {
 }
 
 export class ObtainTicket {
-    readonly static SCHEMA = BorshSchema.Struct({
+    static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
         lootboxId: BorshSchema.u16,
         ticketBump: BorshSchema.u8,
@@ -143,7 +152,7 @@ export class ObtainTicket {
 }
 
 export class Withdraw {
-    readonly static SCHEMA = BorshSchema.Struct({
+    static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
         lootboxId: BorshSchema.u16,
         expireAt: BorshSchema.u32,
@@ -169,7 +178,7 @@ export class Withdraw {
 }
 
 export class AdminWithdraw {
-    readonly static SCHEMA = BorshSchema.Struct({
+    static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
         lootboxId: BorshSchema.u16,
         amount: BorshSchema.u64,

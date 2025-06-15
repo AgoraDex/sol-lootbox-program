@@ -10,13 +10,9 @@ import {ADMIN, PAYER} from "../secrets";
 import {findStateAddress, loadState, VAULT_SEED} from "../state";
 import {Buy, serializeBuy} from "../instruction";
 import * as spl from "@solana/spl-token";
-import * as umiBundle from "@metaplex-foundation/umi-bundle-defaults";
-import * as web3 from "@solana/web3.js";
-import {keypairIdentity} from "@metaplex-foundation/umi";
-import {fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey} from "@metaplex-foundation/umi-web3js-adapters";
-import * as mpl from "@metaplex-foundation/mpl-token-metadata";
+import {Ticket} from "../ticket";
 
-export async function buy(connection: Connection, programId: PublicKey, lootboxId: number, paymentTokenMint: PublicKey) {
+export async function buy(connection: Connection, programId: PublicKey, buyer: Keypair, lootboxId: number, paymentTokenMint: PublicKey) {
     const blockHashInfo = await connection.getLatestBlockhash();
     let tx = new Transaction(blockHashInfo);
 
@@ -39,7 +35,7 @@ export async function buy(connection: Connection, programId: PublicKey, lootboxI
     let tokenBalance = await connection.getTokenAccountBalance(payerAtaPub);
 
     let ticketAmount = 3;
-    let amount = null;
+    let amount = 0;
     for (let price of state.prices) {
         console.info(`Amount ${price.amount} sends to ${new PublicKey(price.ata)}`);
         if (new PublicKey(price.ata).equals(paymentAtaPub)) {
@@ -47,10 +43,10 @@ export async function buy(connection: Connection, programId: PublicKey, lootboxI
             break;
         }
     }
-    if (amount == null) {
+    if (amount == null || amount == 0) {
         throw new Error(`There is no configured price with ata ${paymentAtaPub}.`);
     }
-    let total = amount * BigInt(ticketAmount);
+    let total = BigInt(amount) * BigInt(ticketAmount);
 
     console.info(`Payment token: ${paymentTokenMint}, balance: ${tokenBalance.value.amount}, credit: ${amount}`)
 
@@ -61,56 +57,49 @@ export async function buy(connection: Connection, programId: PublicKey, lootboxI
         total
     ));
 
-    let umiContext = umiBundle
-        .createUmi(connection)
-        .use(keypairIdentity(fromWeb3JsKeypair(PAYER)));
-
     let ticketMints = [];
+    let ticketBumps = [];
+
+    let seed = new Date().getTime();
 
     for (let i = 0; i < ticketAmount; i ++) {
-        let ticketMint = Keypair.generate();
-        ticketMints.push(ticketMint); // save all ticket mints to sign
-        console.info(`Ticket mint: ${ticketMint.publicKey}`)
-        let destinationAta = spl.getAssociatedTokenAddressSync(ticketMint.publicKey, PAYER.publicKey);
-        let tokenMetadataPda = mpl.findMetadataPda(umiContext, {mint: fromWeb3JsPublicKey(ticketMint.publicKey)});
-        let tokenMasterPda = mpl.findMasterEditionPda(umiContext, {mint: fromWeb3JsPublicKey(ticketMint.publicKey)});
-        let mplId = toWeb3JsPublicKey(mpl.MPL_TOKEN_METADATA_PROGRAM_ID);
-
-        let buy = new Buy(lootboxId);
-
-        console.info(`buy: ${buy.instruction}, buy data: ${serializeBuy(buy).toString('hex')}`);
-
-        tx.add(new TransactionInstruction({
-                programId: programId,
-                keys: [
-                    {pubkey: PAYER.publicKey, isWritable: false, isSigner: true},
-                    {pubkey: payerAtaPub, isWritable: true, isSigner: false},
-                    {pubkey: paymentAtaPub, isWritable: true, isSigner: false},
-                    {pubkey: vaultPda, isWritable: true, isSigner: false},
-                    {pubkey: statePda, isWritable: true, isSigner: false},
-                    {pubkey: destinationAta, isWritable: true, isSigner: false},
-                    {pubkey: ticketMint.publicKey, isWritable: true, isSigner: true},
-                    {pubkey: toWeb3JsPublicKey(tokenMetadataPda["0"]), isWritable: true, isSigner: false},
-                    {pubkey: toWeb3JsPublicKey(tokenMasterPda["0"]), isWritable: true, isSigner: false},
-                    {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
-                    {pubkey: web3.SYSVAR_INSTRUCTIONS_PUBKEY, isWritable: false, isSigner: false},
-                    {pubkey: spl.TOKEN_PROGRAM_ID, isWritable: false, isSigner: false},
-                    {pubkey: mplId, isWritable: false, isSigner: false},
-                    {pubkey: spl.ASSOCIATED_TOKEN_PROGRAM_ID, isWritable: false, isSigner: false},
-                ],
-                data: serializeBuy(buy),
-            }
-        ));
+        let ticketPda = Ticket.findPDA(programId, buyer.publicKey, lootboxId, seed, i);
+        ticketMints.push(ticketPda[0]); // save all ticket mints to sign
+        ticketBumps.push(ticketPda[1]);
+        console.info(`Ticket pda: ${ticketPda[0]} with bump ${ticketPda[1]}`)
     }
+
+    let buy = new Buy(lootboxId, ticketBumps, seed);
+
+    console.info(`buy: ${buy.instruction}, buy data: ${serializeBuy(buy).toString('hex')}`);
+
+    tx.add(new TransactionInstruction({
+            programId: programId,
+            keys: [
+                {pubkey: PAYER.publicKey, isWritable: false, isSigner: true},
+                {pubkey: payerAtaPub, isWritable: true, isSigner: false},
+                {pubkey: paymentAtaPub, isWritable: true, isSigner: false},
+                {pubkey: vaultPda, isWritable: true, isSigner: false},
+                {pubkey: statePda, isWritable: true, isSigner: false},
+                {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
+                {pubkey: spl.TOKEN_PROGRAM_ID, isWritable: false, isSigner: false},
+                ...ticketMints.map((v) => {
+                    return {pubkey: v, isWritable: true, isSigner: false}
+                })
+            ],
+            data: serializeBuy(buy),
+        }
+    ));
 
     try {
-        // payer MUST be first signature!
-        let hash = await sendAndConfirmTransaction(connection, tx, [PAYER, ...ticketMints]);
+        let hash = await sendAndConfirmTransaction(connection, tx, [buyer]);
         console.log("tx hash: " + hash);
     }
-    catch (e: SendTransactionError) {
+    catch (e: any) {
         console.error(e);
-        console.error(await e.getLogs(connection));
+        if (e instanceof SendTransactionError) {
+            console.error(await e.getLogs(connection));
+        }
     }
 
     // reload account
