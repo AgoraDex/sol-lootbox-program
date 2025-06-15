@@ -38,7 +38,7 @@ pub fn withdraw<'a>(program_id: &Pubkey,
     let mut hasher = Hasher::default();
 
     burn_tickets(owner, params.tickets, accounts_iter, &mut hasher)?;
-    transfer_tokens(&params.amounts, accounts_iter, &mut hasher, vault_pda, spl_program, &vault_seed)?;
+    transfer_tokens(owner, &params.amounts, accounts_iter, &mut hasher, vault_pda, system_program, spl_program, &vault_seed)?;
 
     // TODO: think is it good idea, maybe state is better, because the same vault might be used for multiple lootboxes
     hasher.hash(&vault_pda.key.to_bytes());
@@ -70,7 +70,7 @@ fn burn_tickets<'a>(owner: &AccountInfo<'a>,
     Ok(())
 }
 
-fn transfer_tokens<'a>(owner: AccountInfo<'a>,
+fn transfer_tokens<'a>(owner: &AccountInfo<'a>,
                        amounts: &Vec<u64>,
                        accounts_iter: &mut Iter<AccountInfo<'a>>,
                        hasher: &mut Hasher,
