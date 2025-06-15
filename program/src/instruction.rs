@@ -1,14 +1,15 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::program_error::ProgramError;
-use solana_program::pubkey::Pubkey;
 
 #[repr(u8)]
 #[derive(Clone, Debug, PartialEq, BorshSerialize, BorshDeserialize)]
 #[borsh(use_discriminant = true)]
 pub enum Instruction {
-    Withdraw(WithdrawParam) = 2,
+    OldBuy = 1, // No supported anymore
+    OldWithdraw = 2, // No supported anymore
     ObtainTicket(ObtainTicketParams) = 3,
     Buy(BuyParam) = 4,
+    Withdraw(WithdrawParam) = 5,
     UpdateState(UpdateStateParams) = 252,
     MigrateToV3(MigrateToV3Params) = 253,
     AdminWithdraw {
@@ -112,6 +113,8 @@ impl Instruction {
 
     pub fn name(&self) -> &'static str {
         match self {
+            Instruction::OldBuy => "OldBuy (deprecated)",
+            Instruction::OldWithdraw => "OldWithdraw (deprecated)",
             Instruction::Buy(_) => "Buy",
             Instruction::Withdraw(_) => "Withdraw",
             Instruction::ObtainTicket(_) => "ObtainTicket",

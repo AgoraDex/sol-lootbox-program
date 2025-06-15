@@ -1,7 +1,5 @@
 use std::slice::Iter;
 
-use mpl_token_metadata::instructions::{BurnCpi, BurnInstructionArgs};
-use mpl_token_metadata::types::BurnArgs;
 use solana_program::account_info::{next_account_info, AccountInfo};
 use solana_program::entrypoint::ProgramResult;
 use solana_program::hash::Hasher;
@@ -13,20 +11,18 @@ use spl_token::instruction::transfer;
 use crate::error::CustomError;
 use crate::instruction::WithdrawParam;
 use crate::state::{State, VAULT};
+use crate::ticket::Ticket;
 use crate::verify::verify_signature;
 
 pub fn withdraw<'a>(program_id: &Pubkey,
-                    receiver: &AccountInfo<'a>,
+                    owner: &AccountInfo<'a>,
                     params: &WithdrawParam,
                     state_pda: &AccountInfo<'a>,
                     vault_pda: &AccountInfo<'a>,
-                    system_program: &AccountInfo<'a>,
-                    sysvar_program: &AccountInfo<'a>,
                     spl_program: &AccountInfo<'a>,
-                    mpl_program: &AccountInfo<'a>,
                     accounts_iter: &mut Iter<AccountInfo<'a>>,
 ) -> ProgramResult {
-    if !receiver.is_signer {
+    if !owner.is_signer {
         msg!("Receiver must be signer.");
         return Err(CustomError::WrongSigner.into());
     }
@@ -39,12 +35,12 @@ pub fn withdraw<'a>(program_id: &Pubkey,
 
     let mut hasher = Hasher::default();
 
-    burn_tickets(receiver, params.tickets, accounts_iter, &mut hasher, vault_pda, system_program, sysvar_program, spl_program, mpl_program, &vault_seed)?;
+    burn_tickets(owner, params.tickets, accounts_iter, &mut hasher)?;
     transfer_tokens(&params.amounts, accounts_iter, &mut hasher, vault_pda, spl_program, &vault_seed)?;
 
     // TODO: think is it good idea, maybe state is better, because the same vault might be used for multiple lootboxes
     hasher.hash(&vault_pda.key.to_bytes());
-    hasher.hash(&receiver.key.to_bytes());
+    hasher.hash(&owner.key.to_bytes());
     hasher.hash(&params.expire_at.to_be_bytes());
 
     let message_hash = hasher.result();
@@ -57,72 +53,16 @@ pub fn withdraw<'a>(program_id: &Pubkey,
     Ok(())
 }
 
-fn burn_tickets<'a>(receiver: &AccountInfo<'a>,
+fn burn_tickets<'a>(owner: &AccountInfo<'a>,
                     count: u8,
                     accounts_iter: &mut Iter<AccountInfo<'a>>,
                     hasher: &mut Hasher,
-                    _vault_pda: &AccountInfo<'a>, // TODO: will be used later
-                    system_program: &AccountInfo<'a>,
-                    sysvar_program: &AccountInfo<'a>,
-                    spl_program: &AccountInfo<'a>,
-                    mpl_program: &AccountInfo<'a>,
-                    seed: &[&[u8]],
 ) -> ProgramResult {
     for _ in 0..count {
-        let ticket_mint = next_account_info(accounts_iter)?;
-        hasher.hash(&ticket_mint.key.to_bytes());
+        let ticket_pda = next_account_info(accounts_iter)?;
+        hasher.hash(&ticket_pda.key.to_bytes());
 
-        let ata = next_account_info(accounts_iter)?;
-        let metadata = next_account_info(accounts_iter)?;
-        let mater_edition = next_account_info(accounts_iter)?;
-
-        // do not use heap too much
-        let burn_instruction = BurnCpi {
-            edition: Some(mater_edition),
-            system_program,
-            sysvar_instructions: sysvar_program,
-            authority: receiver,
-            spl_token_program: spl_program,
-            metadata,
-            mint: ticket_mint,
-            token: ata,
-            master_edition: None,
-            master_edition_mint: None,
-            master_edition_token: None,
-            edition_marker: None,
-            __args: BurnInstructionArgs {
-                burn_args: BurnArgs::V1 {amount: 1}
-            },
-            __program: mpl_program,
-            collection_metadata: None,
-            token_record: None,
-        };
-
-        burn_instruction.invoke_signed(&[seed])?;
-        //
-        // BurnCpiBuilder::new(mpl_program)
-        //     .spl_token_program(spl_program)
-        //     .authority(receiver)
-        //     .burn_args(BurnArgs::V1 {amount: 1})
-        //     .sysvar_instructions(sysvar_program)
-        //     .system_program(system_program)
-        //     .mint(ticket_mint)
-        //     .token(ata)
-        //     .metadata(metadata)
-        //     .edition(Some(mater_edition))
-        //     .invoke_signed(&[seed])?;
-
-        // invoke_signed(
-        //     &close_account(
-        //         spl_program.key,
-        //         ticket_mint.key,
-        //         receiver.key,
-        //         vault_pda.key,
-        //         &[]
-        //     )?,
-        //     &[ticket_mint.clone(), receiver.clone(), vault_pda.clone(), spl_program.clone()],
-        //     &[seed],
-        // )?;
+        Ticket::verify_and_close(owner, ticket_pda)?;
     }
 
     Ok(())

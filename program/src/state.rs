@@ -13,7 +13,6 @@ use solana_program::clock::{Clock, UnixTimestamp};
 
 pub const STATE_SEED: &[u8] = b"state";
 pub const VAULT: &[u8] = b"vault";
-pub const TICKET: &[u8] = b"ticket";
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct StateV3 {
     pub version: StateVersion,

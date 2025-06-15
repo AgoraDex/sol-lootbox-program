@@ -3,17 +3,14 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
+use solana_program::program::invoke_signed;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
-use std::cmp::PartialEq;
-use std::io::Cursor;
+use solana_program::system_instruction::create_account;
+use solana_program::sysvar::rent::Rent;
+use solana_program::sysvar::Sysvar;
 use std::mem::size_of;
 use std::ops::{Deref, DerefMut};
-use std::path::Component::Prefix;
-use solana_program::program::invoke_signed;
-use solana_program::sysvar::Sysvar;
-use solana_program::sysvar::rent::Rent;
-use solana_program::system_instruction::create_account;
 
 pub const TICKET_PREFIX: &[u8; 4] = b"AGLB";
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
@@ -39,7 +36,9 @@ impl Ticket {
                                  buy_index: u8,
                                  issue_index: u32,
                                  ticket_pda: &AccountInfo<'a>,
-                                 bump: Option<u8>) -> Result<Ticket, ProgramError> {
+                                 bump: Option<u8>,
+                                 external_id: Option<u32>,
+    ) -> Result<Ticket, ProgramError> {
         if !buyer.is_signer {
             msg!("Buyer must sign the transaction.");
             return Err(CustomError::WrongSigner.into());
@@ -69,7 +68,7 @@ impl Ticket {
             owner: *buyer.key,
             lootbox_id,
             issue_index,
-            external_id: 0,
+            external_id: external_id.unwrap_or(0),
         };
 
         let space = Ticket::serialized_len(&ticket)?;
@@ -91,6 +90,40 @@ impl Ticket {
 
         Ok(ticket)
     }
+
+    pub fn verify_and_close<'a>(
+        owner: &AccountInfo<'a>,
+        ticket_pda: &AccountInfo<'a>,
+    ) -> ProgramResult {
+        if !owner.is_signer {
+            msg!("Owner must sign the transaction.");
+            return Err(CustomError::WrongSigner.into());
+        }
+
+        if !Self::if_initialized(ticket_pda) {
+            msg!("The specified ticket must be initialized.");
+            return Err(CustomError::TicketAccountNotExists.into());
+        }
+
+        let ticket = Ticket::load_from(ticket_pda)?;
+        if ticket.owner != *owner.key {
+            msg!("Wrong ticket owner.");
+            return Err(CustomError::WrongTicketOwner.into());
+        }
+
+        // Безопасно переносим lamports обратно
+        **owner.lamports.borrow_mut() += **ticket_pda.lamports.borrow();
+        **ticket_pda.lamports.borrow_mut() = 0;
+
+        // Обнуляем данные PDA
+        {
+            let mut data = ticket_pda.try_borrow_mut_data()?;
+            data.fill(0);
+        }
+
+        Ok(())
+    }
+
 
     pub fn if_initialized(ticket_pda: &AccountInfo) -> bool {
         if ticket_pda.data_is_empty() {

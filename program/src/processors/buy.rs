@@ -62,6 +62,7 @@ pub fn buy<'a>(program_id: &Pubkey,
                 issue_index,
                 ticket_pda,
                 Some(*ticket_bump),
+                None,
             )?;
 
             issue_index += 1;
