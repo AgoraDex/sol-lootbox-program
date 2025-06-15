@@ -7,6 +7,7 @@ use solana_program::msg;
 use solana_program::program::invoke_signed;
 use solana_program::pubkey::Pubkey;
 use spl_token::instruction::transfer;
+use spl_associated_token_account::instruction::create_associated_token_account;
 
 use crate::error::CustomError;
 use crate::instruction::WithdrawParam;
@@ -19,6 +20,7 @@ pub fn withdraw<'a>(program_id: &Pubkey,
                     params: &WithdrawParam,
                     state_pda: &AccountInfo<'a>,
                     vault_pda: &AccountInfo<'a>,
+                    system_program: &AccountInfo<'a>,
                     spl_program: &AccountInfo<'a>,
                     accounts_iter: &mut Iter<AccountInfo<'a>>,
 ) -> ProgramResult {
@@ -68,10 +70,12 @@ fn burn_tickets<'a>(owner: &AccountInfo<'a>,
     Ok(())
 }
 
-fn transfer_tokens<'a>(amounts: &Vec<u64>,
+fn transfer_tokens<'a>(owner: AccountInfo<'a>,
+                       amounts: &Vec<u64>,
                        accounts_iter: &mut Iter<AccountInfo<'a>>,
                        hasher: &mut Hasher,
                        vault_pda: &AccountInfo<'a>,
+                       system_program: &AccountInfo<'a>,
                        spl_program: &AccountInfo<'a>,
                        seed: &[&[u8]],
 ) -> ProgramResult {
@@ -82,6 +86,26 @@ fn transfer_tokens<'a>(amounts: &Vec<u64>,
 
         let source_ata = next_account_info(accounts_iter)?;
         let destination_ata = next_account_info(accounts_iter)?;
+
+        if destination_ata.owner != spl_program.key {
+            invoke_signed(
+                &create_associated_token_account(
+                    destination_ata.key,
+                    owner.key,
+                    token_mint.key,
+                    spl_program.key,
+                ),
+                &[
+                    owner.clone(),
+                    destination_ata.clone(),
+                    owner.clone(),
+                    token_mint.clone(),
+                    system_program.clone(),
+                    spl_program.clone(),
+                ],
+                &[],
+            )?;
+        }
 
         invoke_signed(
             &transfer(
