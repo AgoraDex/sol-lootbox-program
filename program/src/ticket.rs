@@ -58,7 +58,7 @@ impl Ticket {
         };
 
         if ticket_pair.0 != *ticket_pda.key {
-            msg!("Ticket account & generated PDA mismatch for ticket {}", buy_index);
+            msg!("Ticket account {} & generated PDA {} mismatch.", ticket_pair.0.to_string(), ticket_pda.key.to_string());
             return Err(CustomError::TicketAccountMismatch.into());
         }
 
