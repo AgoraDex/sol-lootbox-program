@@ -52,7 +52,6 @@ pub fn buy<'a>(program_id: &Pubkey,
         for ticket_bump in &params.ticket_bumps {
             let ticket_pda = next_account_info(accounts_iter)?;
 
-            msg!("Issue {} tickets at issue {}", index, issue_index);
             Ticket::verify_and_create(
                 program_id,
                 system_program,
