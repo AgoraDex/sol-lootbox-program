@@ -87,7 +87,7 @@ fn transfer_tokens<'a>(owner: &AccountInfo<'a>,
         let source_ata = next_account_info(accounts_iter)?;
         let destination_ata = next_account_info(accounts_iter)?;
 
-        if destination_ata.owner != spl_program.key {
+        if destination_ata.data_is_empty() {
             invoke_signed(
                 &create_associated_token_account(
                     destination_ata.key,

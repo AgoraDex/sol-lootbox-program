@@ -50,15 +50,15 @@ impl Ticket {
         }
 
         let ticket_pair = if bump.is_some() {
-            let seed = [buyer.owner.as_ref(), &lootbox_id.to_be_bytes(), &ticket_seed.to_be_bytes(), &buy_index.to_be_bytes(), &[bump.unwrap()]];
+            let seed = [buyer.key.as_ref(), &lootbox_id.to_be_bytes(), &ticket_seed.to_be_bytes(), &buy_index.to_be_bytes(), &[bump.unwrap()]];
             (Pubkey::create_program_address(&seed, program_id)?, bump.unwrap())
         } else {
-            let seed = [buyer.owner.as_ref(), &lootbox_id.to_be_bytes(), &ticket_seed.to_be_bytes(), &buy_index.to_be_bytes()];
+            let seed = [buyer.key.as_ref(), &lootbox_id.to_be_bytes(), &ticket_seed.to_be_bytes(), &buy_index.to_be_bytes()];
             Pubkey::find_program_address(&seed, program_id)
         };
 
         if ticket_pair.0 != *ticket_pda.key {
-            msg!("Ticket account & generated PDA mismatch.");
+            msg!("Ticket account & generated PDA mismatch for ticket {}", buy_index);
             return Err(CustomError::TicketAccountMismatch.into());
         }
 
@@ -83,7 +83,7 @@ impl Ticket {
                 program_id,
             ),
             &[buyer.clone(), ticket_pda.clone(), system_program.clone()],
-            &[&[buyer.owner.as_ref(), &lootbox_id.to_be_bytes(), &ticket_seed.to_be_bytes(), &buy_index.to_be_bytes(), &[ticket_pair.1]]],
+            &[&[buyer.key.as_ref(), &lootbox_id.to_be_bytes(), &ticket_seed.to_be_bytes(), &buy_index.to_be_bytes(), &[ticket_pair.1]]],
         )?;
 
         ticket.save_to(ticket_pda)?;
