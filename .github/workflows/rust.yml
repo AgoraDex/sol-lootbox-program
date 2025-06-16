@@ -44,7 +44,7 @@ jobs:
         run: mkdir -p "${{ env.DOCKER_CACHE_DIR }}"
       - name: Load Docker image if cached
         if: ${{ steps.cache-docker.outputs.cache-hit == 'true' }}
-        run: docker load -i "${{ env.DOCKER_IMAGE_FILE }}"
+        run: docker load -i "${{ env.DOCKER_CACHE_DIR }}/${{ env.DOCKER_IMAGE_FILE }}"
         continue-on-error: true
       - name: Build
         run: solana-verify build "$(pwd)/program" -b "${{ env.SOLANA_VERIFY_IMAGE }}"
