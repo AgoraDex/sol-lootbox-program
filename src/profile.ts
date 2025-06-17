@@ -2,16 +2,17 @@ let profile = process.env.PROFILE;
 
 export const PROFILE_MAINNET = 'mainnet';
 export const PROFILE_DEVNET = 'devnet';
+export const PROFILE_DEVNET_OLD = 'devnet-old';
 
-if (!profile) {
+if (profile == undefined) {
     profile = PROFILE_DEVNET;
     console.info("Default profile is " + profile)
 }
 else {
-    if (profile.startsWith("d") || profile.startWith("D")) {
+    if (profile.startsWith("d") || profile.startsWith("D")) {
         profile = PROFILE_DEVNET;
     }
-    else if (profile.startsWith("m") || profile.startWith("M")) {
+    else if (profile.startsWith("m") || profile.startsWith("M")) {
         profile = PROFILE_MAINNET;
     }
     else {

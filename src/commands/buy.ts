@@ -60,7 +60,8 @@ export async function buy(connection: Connection, programId: PublicKey, buyer: K
     let ticketMints = [];
     let ticketBumps = [];
 
-    let seed = new Date().getTime();
+    let seed = Math.floor(new Date().getTime() / 1000);
+    // let seed = 1750107191;
 
     for (let i = 0; i < ticketAmount; i ++) {
         let ticketPda = Ticket.findPDA(programId, buyer.publicKey, lootboxId, seed, i);
@@ -84,7 +85,7 @@ export async function buy(connection: Connection, programId: PublicKey, buyer: K
                 {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
                 {pubkey: spl.TOKEN_PROGRAM_ID, isWritable: false, isSigner: false},
                 ...ticketMints.map((v) => {
-                    return {pubkey: v, isWritable: true, isSigner: false}
+                    return {pubkey: v, isWritable: true, isSigner: false};
                 })
             ],
             data: serializeBuy(buy),

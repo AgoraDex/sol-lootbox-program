@@ -44,10 +44,11 @@ export class Ticket {
 
     public static findPDA(programId: PublicKey, owner: PublicKey, lootboxId: number, seed: number, index: number): [PublicKey, number] {
         const buf = Buffer.alloc(2 + 4 + 1);
-        buf.writeUint16BE(lootboxId);
-        buf.writeUint32BE(seed);
-        buf.writeUint8(index);
+        let offset = buf.writeUint16BE(lootboxId);
+        offset = buf.writeUint32BE(seed, offset);
+        buf.writeUint8(index, offset);
 
+        // console.info(`PDA: ${owner} + ${lootboxId} + ${seed} + ${index} : ${buf.length}`);
         return PublicKey.findProgramAddressSync([owner.toBytes(), buf], programId);
     }
 }

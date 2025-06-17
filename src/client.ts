@@ -20,6 +20,7 @@ import {getState} from "./commands/get-state";
 import {adminWithdraw} from "./commands/admin-withdraw";
 import {newKey} from "./commands/new-key";
 import {PARAMS} from "./parameters";
+import {PAYER} from "./secrets";
 
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
@@ -57,10 +58,10 @@ async function main (argv: string[]) {
     }
     switch (argv[2].toLowerCase()) {
         case "buy":
-            await buy(connection, PARAMS.programId, PARAMS.lootboxId, PARAMS.borgMint);
+            await buy(connection, PARAMS.programId, PAYER, PARAMS.lootboxId, PARAMS.borgMint);
             break;
         case "init":
-            await init(connection, PARAMS.programId, PARAMS.lootboxId, PARAMS.usdcMint, PARAMS.borgMint);
+            await init(connection, PARAMS.programId, PARAMS.lootboxId, PARAMS.signer, PARAMS.usdcMint, PARAMS.borgMint);
             break;
         case "new-admin":
             await newAdmin(connection);
@@ -71,7 +72,7 @@ async function main (argv: string[]) {
             }
             let expiredAt = Number.parseInt(argv[3]);
             let ticketIdsRaw = JSON.parse(argv[4]);
-            let ticketIds: PublicKey[];
+            let ticketIds: PublicKey[] = [];
             if (typeof ticketIdsRaw == "string") {
                 ticketIds = [new PublicKey(ticketIdsRaw)];
             }
@@ -88,8 +89,9 @@ async function main (argv: string[]) {
             let signature = parseSignature(argv[6]);
             await withdraw(
                 connection,
-                programId,
-                lootboxId,
+                PAYER,
+                PARAMS.programId,
+                PARAMS.lootboxId,
                 expiredAt,
                 ticketIds,
                 rewards,
@@ -120,13 +122,13 @@ async function main (argv: string[]) {
             let ticketId = Number.parseInt(argv[3]);
             let expiredAt = Number.parseInt(argv[4]);
             let signature = parseSignature(argv[5]);
-            await obtain(connection, programId, lootboxId, ticketId, expiredAt, signature);
+            await obtain(connection, PARAMS.programId, PARAMS.lootboxId, ticketId, expiredAt, signature);
             break;
         case "migrate":
-            await migrate(connection, programId, lootboxId);
+            await migrate(connection, PARAMS.programId, PARAMS.lootboxId);
             break;
         case "update-state":
-            await updateState(connection, programId, lootboxId);
+            await updateState(connection, PARAMS.programId, PARAMS.lootboxId);
             break;
         case "mint-nft": {
             if (argv.length != 4) {
@@ -158,7 +160,7 @@ async function main (argv: string[]) {
             break;
         }
         case "get-state": {
-            await getState(connection, programId, lootboxId);
+            await getState(connection, PARAMS.programId, PARAMS.lootboxId);
             break;
         }
         case "admin-withdraw": {
@@ -167,7 +169,7 @@ async function main (argv: string[]) {
             }
             let mint = new PublicKey(argv[3]);
             let amount = parseInt(argv[4]);
-            await adminWithdraw(connection, programId, lootboxId, {tokenMint: mint, amount: amount});
+            await adminWithdraw(connection, PARAMS.programId, PARAMS.lootboxId, {tokenMint: mint, amount: amount});
             break;
         }
         case "new-key": {

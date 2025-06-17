@@ -50,7 +50,7 @@ impl Ticket {
         }
 
         let ticket_pair = if bump.is_some() {
-            msg!("PDA: {} + {} + {} + {} + {}", buyer.key.to_string(), lootbox_id, ticket_seed, buy_index, bump.unwrap());
+            // msg!("PDA: {} + {} + {} + {} + {}", buyer.key.to_string(), lootbox_id, ticket_seed, buy_index, bump.unwrap());
             let seed = [buyer.key.as_ref(), &lootbox_id.to_be_bytes(), &ticket_seed.to_be_bytes(), &[buy_index], &[bump.unwrap()]];
             (Pubkey::create_program_address(&seed, program_id)?, bump.unwrap())
         } else {
