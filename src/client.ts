@@ -21,6 +21,7 @@ import {adminWithdraw} from "./commands/admin-withdraw";
 import {newKey} from "./commands/new-key";
 import {PARAMS} from "./parameters";
 import {PAYER} from "./secrets";
+import {unpackTx} from "./commands/unpack-tx";
 
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
@@ -122,7 +123,7 @@ async function main (argv: string[]) {
             let ticketId = Number.parseInt(argv[3]);
             let expiredAt = Number.parseInt(argv[4]);
             let signature = parseSignature(argv[5]);
-            await obtain(connection, PARAMS.programId, PARAMS.lootboxId, ticketId, expiredAt, signature);
+            await obtain(connection, PARAMS.programId, PAYER, PARAMS.lootboxId, ticketId, expiredAt, signature);
             break;
         case "migrate":
             await migrate(connection, PARAMS.programId, PARAMS.lootboxId);
@@ -177,8 +178,16 @@ async function main (argv: string[]) {
             await newKey(connection, prefix);
             break;
         }
+        case "unpack-tx": {
+            if (argv.length != 4) {
+                throw new Error("Usage: npm run action unpack-tx <base64tx>.");
+            }
+
+            await unpackTx(argv[3]);
+            break;
+        }
         default:
-            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw|new-key>");
+            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw|new-key|unpack-tx>");
     }
 }
 

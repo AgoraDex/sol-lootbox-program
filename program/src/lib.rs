@@ -65,7 +65,7 @@ fn process_instruction<'a>(
             let payer = next_account_info(accounts_iter)?;
             let state_pda = next_account_info(accounts_iter)?;
             let vault_pda = next_account_info(accounts_iter)?;
-            let token_pda = next_account_info(accounts_iter)?;
+            let ticket_pda = next_account_info(accounts_iter)?;
             let system_account = next_account_info(accounts_iter)?;
 
             obtain_ticket(
@@ -74,7 +74,7 @@ fn process_instruction<'a>(
                 params,
                 state_pda,
                 vault_pda,
-                token_pda,
+                ticket_pda,
                 system_account,
             )?;
         }
