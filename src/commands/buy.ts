@@ -34,7 +34,7 @@ export async function buy(connection: Connection, programId: PublicKey, buyer: K
     console.info(`Payment ATA: ${paymentAtaPub}`);
     let tokenBalance = await connection.getTokenAccountBalance(payerAtaPub);
 
-    let ticketAmount = 3;
+    let ticketAmount = 20;
     let amount = 0;
     for (let price of state.prices) {
         console.info(`Amount ${price.amount} sends to ${new PublicKey(price.ata)}`);
