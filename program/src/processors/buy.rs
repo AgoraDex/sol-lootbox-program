@@ -106,7 +106,7 @@ fn accept_payment<'a>(
             payment_ata.key,
             buyer.key,
             &[],
-            amount,
+            total,
         )?,
         &[
             buyer_ata.clone(),
