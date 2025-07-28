@@ -42,7 +42,7 @@ pub fn update_state<'a>(
         let mut price_amount = state.prices
             .iter()
             .find(|x| {x.ata == params.price_ata})
-            .ok_or(Err(CustomError::WrongPaymentAta))?
+            .ok_or(CustomError::WrongPaymentAta::into())?
             .amount;
 
         msg!("Update price for token ATA {} from {} to {}.", params.price_ata, price_amount, params.price_amount);
