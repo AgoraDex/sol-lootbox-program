@@ -1,6 +1,7 @@
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
+use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 
 use crate::error::CustomError;
@@ -41,7 +42,7 @@ pub fn update_state<'a>(
         let mut price_amount = state.prices
             .iter()
             .find(|x| {x.ata == params.price_ata})
-            .ok_or(CustomError::WrongPaymentAta.into())?
+            .ok_or::<ProgramError>(CustomError::WrongPaymentAta.into())?
             .amount;
 
         msg!("Update price for token ATA {} from {} to {}.", params.price_ata, price_amount, params.price_amount);
