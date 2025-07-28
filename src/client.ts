@@ -22,6 +22,7 @@ import {newKey} from "./commands/new-key";
 import {PARAMS} from "./parameters";
 import {PAYER} from "./secrets";
 import {unpackTx} from "./commands/unpack-tx";
+import {updatePrice} from "./commands/update-price";
 
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
@@ -186,8 +187,16 @@ async function main (argv: string[]) {
             await unpackTx(argv[3]);
             break;
         }
+        case "update-price": {
+            if (argv.length != 5) {
+                throw new Error("Usage: npm run action update-price <ata> <amount>");
+            }
+
+            await updatePrice(connection, PARAMS.programId, PARAMS.lootboxId, new PublicKey(argv[3]), argv[4]);
+            break;
+        }
         default:
-            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw|new-key|unpack-tx>");
+            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw|new-key|unpack-tx|update-price>");
     }
 }
 

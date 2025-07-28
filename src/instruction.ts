@@ -1,4 +1,4 @@
-import { BorshSchema, borshSerialize, borshDeserialize, Unit } from 'borsher';
+import {BorshSchema, borshSerialize} from 'borsher';
 
 // Определение enum типов
 enum InstructionType {
@@ -67,24 +67,62 @@ export class Migrate {
         this.stateBump = stateBump;
     }
 }
+const MAX_SUPPLY: u32 = 1;
+const BEGIN_TS: u32 = 2;
+const END_TS: u32 = 4;
+const PRICE: u32 = 8;
 
 export class UpdateState {
     static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
-        lootboxId: BorshSchema.u16,
         stateBump: BorshSchema.u8,
+        lootboxId: BorshSchema.u16,
+        enabledFields: BorshSchema.u32,
         maxSupply: BorshSchema.u32,
+        beginTs: BorshSchema.u32,
+        endTs: BorshSchema.u32,
+        priceAta: BorshSchema.Array(BorshSchema.u8, 32),
+        priceAmount: BorshSchema.u64,
     });
 
     instruction: InstructionType = InstructionType.UpdateState;
-    lootboxId: number;
     stateBump: number;
-    maxSupply: number;
+    lootboxId: number;
+    enabledFields: number = 0;
+    maxSupply: number = 0;
+    beginTs: number = 0;
+    endTs: number = 0;
+    priceAta: Uint8Array = [];
+    priceAmount: number = 0;
 
-    constructor(lootboxId: number, stateBump: number, maxSupply: number) {
+    constructor(lootboxId: number, stateBump: number) {
         this.lootboxId = lootboxId;
         this.stateBump = stateBump;
-        this.maxSupply = maxSupply;
+    }
+
+    public withMaxSupply(value: number) : UpdateState {
+        this.maxSupply = value;
+        this.enabledFields |= MAX_SUPPLY;
+        return this;
+    }
+
+    public withBeginTs(value: number) : UpdateState {
+        this.beginTs = value;
+        this.enabledFields |= BEGIN_TS;
+        return this;
+    }
+
+    public withEndTs(value: number) : UpdateState {
+        this.endTs = value;
+        this.enabledFields |= END_TS;
+        return this;
+    }
+
+    public withPrice(ata: Uint8Array, amount: number) : UpdateState {
+        this.priceAta = ata;
+        this.priceAmount = amount;
+        this.enabledFields |= PRICE;
+        return this;
     }
 }
 
@@ -100,7 +138,6 @@ export class Buy {
     lootboxId: number;
     ticketBumps: Array<number>;
     ticketSeed: number;
-
 
     constructor(lootboxId: number, ticketBumps: Array<number>, ticketSeed: number) {
         this.lootboxId = lootboxId;
