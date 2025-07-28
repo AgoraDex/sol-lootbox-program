@@ -1,5 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::program_error::ProgramError;
+use solana_program::pubkey::Pubkey;
 
 #[repr(u8)]
 #[derive(Clone, Debug, PartialEq, BorshSerialize, BorshDeserialize)]
@@ -51,12 +52,15 @@ pub struct UpdateStateParams {
     pub max_supply: u32,
     pub begin_ts: u32,
     pub end_ts: u32,
+    pub price_ata: Pubkey,
+    pub price_amount: u64,
 }
 
 impl UpdateStateParams {
     const MAX_SUPPLY: u32 = 1;
     const BEGIN_TS: u32 = 2;
     const END_TS: u32 = 4;
+    const PRICE: u32 = 8;
 
     fn is_field(&self, flag: u32) -> bool {
         (self.enabled_fields & flag) == flag
@@ -72,6 +76,10 @@ impl UpdateStateParams {
 
     pub fn is_end_ts(&self) -> bool {
         self.is_field(Self::END_TS)
+    }
+
+    pub fn is_price(&self) -> bool {
+        self.is_field(Self::PRICE)
     }
 }
 

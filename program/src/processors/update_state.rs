@@ -1,3 +1,4 @@
+use std::thread::panicking;
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
@@ -36,6 +37,17 @@ pub fn update_state<'a>(
     if params.is_end_ts() {
         msg!("Update end_ts from {} to {}.", state.end_ts, params.end_ts);
         state.end_ts = params.end_ts;
+    }
+    if params.is_price() {
+        let mut price_amount = state.prices
+            .iter()
+            .find(|x| {x.ata == params.price_ata})
+            .ok_or(Err(CustomError::WrongPaymentAta))?
+            .amount;
+
+        msg!("Update price for token ATA {} from {} to {}.", params.price_ata, price_amount, params.price_amount);
+        price_amount = params.price_amount;
+
     }
 
     msg!("Save state.");
