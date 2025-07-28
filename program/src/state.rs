@@ -5,7 +5,7 @@ use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
-use std::cmp::PartialEq;
+use std::cmp::{min, PartialEq};
 use std::io::Cursor;
 use std::mem::size_of;
 use std::ops::{Deref, DerefMut};
@@ -13,7 +13,6 @@ use solana_program::clock::{Clock, UnixTimestamp};
 
 pub const STATE_SEED: &[u8] = b"state";
 pub const VAULT: &[u8] = b"vault";
-pub const TICKET: &[u8] = b"ticket";
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct StateV3 {
     pub version: StateVersion,
@@ -146,13 +145,15 @@ impl State {
         Err(CustomError::WrongPaymentAta.into())
     }
 
-    pub fn check_supply(&self) -> ProgramResult {
-        if self.total_supply == self.max_supply {
-            msg!("state.total_supply == state.max_supply");
+    pub fn check_and_get_correct_count(&self, count: u8) -> Result<u8, ProgramError> {
+        if self.total_supply >= self.max_supply {
+            msg!("state.total_supply >= state.max_supply");
             return Err(CustomError::MaxSupplyReached.into());
         }
 
-        Ok(())
+        let tickets_left = self.max_supply - self.total_supply;
+
+        Ok(min(count as u32, tickets_left) as u8)
     }
 
     pub fn check_time(&self, clock: &Clock) -> ProgramResult {

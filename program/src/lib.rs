@@ -1,4 +1,5 @@
 use solana_program::{account_info::{AccountInfo, next_account_info}, entrypoint, entrypoint::ProgramResult, msg, pubkey::Pubkey};
+use crate::error::CustomError;
 use crate::instruction::Instruction;
 use crate::processors::admin_withdraw::admin_withdraw;
 use crate::processors::buy::buy;
@@ -12,8 +13,8 @@ mod instruction;
 mod error;
 mod processors;
 mod state;
-mod nft;
 mod verify;
+mod ticket;
 
 entrypoint!(process_instruction);
 
@@ -28,38 +29,29 @@ fn process_instruction<'a>(
     let instruction = Instruction::unpack(instruction_data)?;
     msg!("Instruction: {:?}", instruction.name());
     match instruction {
+        Instruction::OldBuy | Instruction::OldWithdraw => {
+            return Err(CustomError::InstructionNotSupported.into());
+        }
         Instruction::Buy(params) => {
             let payer = next_account_info(accounts_iter)?;
             let payer_ata = next_account_info(accounts_iter)?;
             let payment_ata = next_account_info(accounts_iter)?;
             let vault_pda = next_account_info(accounts_iter)?;
             let state_pda = next_account_info(accounts_iter)?;
-            let destination_ata = next_account_info(accounts_iter)?;
-            let nft_mint = next_account_info(accounts_iter)?;
-            let metadata_pda = next_account_info(accounts_iter)?;
-            let master_pda = next_account_info(accounts_iter)?;
             let system_program = next_account_info(accounts_iter)?;
-            let sysvar_account = next_account_info(accounts_iter)?;
             let spl_program = next_account_info(accounts_iter)?;
-            let mpl_program = next_account_info(accounts_iter)?;
-            let ata_program = next_account_info(accounts_iter)?;
 
-            buy(program_id, payer, payer_ata, payment_ata, destination_ata, state_pda, vault_pda,
-                nft_mint, metadata_pda,
-                master_pda, system_program, sysvar_account, spl_program,
-                mpl_program, ata_program, params.lootbox_id)?;
+            buy(program_id, payer, payer_ata, payment_ata, state_pda, vault_pda,
+                system_program, spl_program, &params, accounts_iter)?;
         }
         Instruction::Withdraw(params) => {
             let payer = next_account_info(accounts_iter)?;
             let vault_pda = next_account_info(accounts_iter)?;
             let state_pda = next_account_info(accounts_iter)?;
             let system_program = next_account_info(accounts_iter)?;
-            let sysvar_account = next_account_info(accounts_iter)?;
             let spl_program = next_account_info(accounts_iter)?;
-            let mpl_program = next_account_info(accounts_iter)?;
 
-            withdraw(program_id, payer, &params, state_pda, vault_pda, system_program,
-                     sysvar_account, spl_program, mpl_program, accounts_iter)?;
+            withdraw(program_id, payer, &params, state_pda, vault_pda, system_program, spl_program, accounts_iter)?;
         }
         Instruction::Initialize(params) => {
             let admin = next_account_info(accounts_iter)?;
@@ -71,33 +63,19 @@ fn process_instruction<'a>(
         }
         Instruction::ObtainTicket(params) => {
             let payer = next_account_info(accounts_iter)?;
-            let destination_ata = next_account_info(accounts_iter)?;
             let state_pda = next_account_info(accounts_iter)?;
             let vault_pda = next_account_info(accounts_iter)?;
-            let token_account = next_account_info(accounts_iter)?;
-            let metadata_pda = next_account_info(accounts_iter)?;
-            let master_pda = next_account_info(accounts_iter)?;
+            let ticket_pda = next_account_info(accounts_iter)?;
             let system_account = next_account_info(accounts_iter)?;
-            let sysvar_account = next_account_info(accounts_iter)?;
-            let spl_program = next_account_info(accounts_iter)?;
-            let mpl_program = next_account_info(accounts_iter)?;
-            let ata_program = next_account_info(accounts_iter)?;
 
             obtain_ticket(
                 program_id,
                 payer,
                 params,
-                destination_ata,
                 state_pda,
                 vault_pda,
-                token_account,
-                metadata_pda,
-                master_pda,
+                ticket_pda,
                 system_account,
-                sysvar_account,
-                spl_program,
-                mpl_program,
-                ata_program,
             )?;
         }
         Instruction::MigrateToV3(params) => {

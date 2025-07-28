@@ -9,7 +9,8 @@
     "build": "cd program && cargo build-sbf && cd ../",
     "deploy": "solana program deploy program/target/deploy/sm.so --program-id HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN",
     "deploy-mainnet": "solana program deploy -u m -k /root/.config/solana/agora.json --upgrade-authority /root/.config/solana/agora.json --program-id 9eMe9ZfiBf8mtcB6RqP45xR4HRoYBRmfcR98EuxXba3X program/target/deploy/sm.so",
-    "recovery": "solana program deploy --buffer recovery.json --program-id HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN program/target/deploy/sm.so"
+    "recovery": "solana program deploy --buffer recovery.json --program-id HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN program/target/deploy/sm.so",
+    "recovery-mainnet": "solana program deploy --buffer recovery.json -u m -k /root/.config/solana/agora.json --upgrade-authority /root/.config/solana/agora.json --program-id 9eMe9ZfiBf8mtcB6RqP45xR4HRoYBRmfcR98EuxXba3X program/target/deploy/sm.so"
   },
   "keywords": [
     "solana"

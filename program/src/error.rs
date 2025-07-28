@@ -38,6 +38,18 @@ pub enum CustomError {
     TooEarly,
     #[error("It's too late for that action.")]
     TooLate,
+    #[error("The specified ticket account doesn't match with their PDA.")]
+    TicketAccountMismatch,
+    #[error("The specified ticket account has been already used.")]
+    TicketAccountAlreadyUsed,
+    #[error("The specified price ATA or amount of tickets is wrong.")]
+    WrongPriceOrCount,
+    #[error("The specified ticked PDA is empty: it might be already burned or didn't create.")]
+    TicketAccountNotExists,
+    #[error("The specified owner doesn't own the specified ticket.")]
+    WrongTicketOwner,
+    #[error("The specified instruction is not supported anymore.")]
+    InstructionNotSupported,
 }
 
 impl From<CustomError> for ProgramError {

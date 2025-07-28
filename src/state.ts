@@ -13,7 +13,7 @@ export enum StateVersion {
 }
 
 export class Price {
-    readonly static SCHEMA = BorshSchema.Struct({
+    public static readonly SCHEMA = BorshSchema.Struct({
         amount: BorshSchema.u64,
         ata: BorshSchema.Array(BorshSchema.u8, 32),
     })

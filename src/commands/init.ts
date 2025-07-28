@@ -9,14 +9,13 @@ import {
 import * as spl from "@solana/spl-token";
 import {ADMIN} from "../secrets";
 import {Initialize, serializeInitialize} from "../instruction";
-import {findStateAddress, loadState, STATE_SEED, VAULT_SEED} from "../state";
+import {findStateAddress, loadState, VAULT_SEED} from "../state";
 
-export async function init(connection: Connection, programId: PublicKey, lootboxId: number, paymentToken1: PublicKey, paymentToken2: PublicKey) {
+export async function init(connection: Connection, programId: PublicKey, lootboxId: number, signer: Buffer, paymentToken1: PublicKey, paymentToken2: PublicKey) {
     const blockhashInfo = await connection.getLatestBlockhash();
     let tx = new Transaction(blockhashInfo);
     let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId)
     let [statePda, stateBump] = findStateAddress(ADMIN.publicKey, lootboxId, programId);
-    let signer = Buffer.from("033e2222644f8d418e9b51622ba74eb23313c7cabbba68d45d767ae321bd34b5eb", "hex");
 
     console.info(`Vault: ${vaultPda}`);
     console.info(`State: ${statePda}`);
@@ -34,9 +33,9 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
         Math.floor(now.getTime() / 1000),
         Math.floor(later.getTime() / 1000),
         new Uint8Array(signer),
-        "Swissborg Solana v2",
-        [20_000_000],
-        "https://lootbox-dev.agoradex.io/api/v1/m/SOLANA_DEVNET/"
+        "Solana Lootbox v2",
+        [5_000_000, 20_000_000],
+        ""
     );
 
     // let str = Array.from(serializeInstruction(init)).map(value => value.toString(16).padStart(2, "0")).toString()
@@ -77,7 +76,7 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
                 {pubkey: statePda, isWritable: true, isSigner: false},
                 {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
                 {pubkey: paymentAta1, isWritable: false, isSigner: false},
-                // {pubkey: paymentAta2, isWritable: false, isSigner: false},
+                {pubkey: paymentAta2, isWritable: false, isSigner: false},
             ],
             data: Buffer.from(serializeInitialize(init)),
         })

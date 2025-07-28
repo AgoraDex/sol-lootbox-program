@@ -6,9 +6,11 @@ use solana_program::pubkey::Pubkey;
 #[derive(Clone, Debug, PartialEq, BorshSerialize, BorshDeserialize)]
 #[borsh(use_discriminant = true)]
 pub enum Instruction {
-    Buy(BuyParam) = 1,
-    Withdraw(WithdrawParam) = 2,
+    OldBuy = 1, // No supported anymore
+    OldWithdraw = 2, // No supported anymore
     ObtainTicket(ObtainTicketParams) = 3,
+    Buy(BuyParam) = 4,
+    Withdraw(WithdrawParam) = 5,
     UpdateState(UpdateStateParams) = 252,
     MigrateToV3(MigrateToV3Params) = 253,
     AdminWithdraw {
@@ -19,7 +21,9 @@ pub enum Instruction {
 }
 #[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
 pub struct BuyParam {
-    pub lootbox_id: u16
+    pub lootbox_id: u16,
+    pub ticket_bumps: Vec<u8>,
+    pub ticket_seed: u32,
 }
 #[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
 pub struct InitializeParams {
@@ -48,12 +52,15 @@ pub struct UpdateStateParams {
     pub max_supply: u32,
     pub begin_ts: u32,
     pub end_ts: u32,
+    pub price_ata: Pubkey,
+    pub price_amount: u64,
 }
 
 impl UpdateStateParams {
     const MAX_SUPPLY: u32 = 1;
     const BEGIN_TS: u32 = 2;
     const END_TS: u32 = 4;
+    const PRICE: u32 = 8;
 
     fn is_field(&self, flag: u32) -> bool {
         (self.enabled_fields & flag) == flag
@@ -69,6 +76,10 @@ impl UpdateStateParams {
 
     pub fn is_end_ts(&self) -> bool {
         self.is_field(Self::END_TS)
+    }
+
+    pub fn is_price(&self) -> bool {
+        self.is_field(Self::PRICE)
     }
 }
 
@@ -110,6 +121,8 @@ impl Instruction {
 
     pub fn name(&self) -> &'static str {
         match self {
+            Instruction::OldBuy => "OldBuy (deprecated)",
+            Instruction::OldWithdraw => "OldWithdraw (deprecated)",
             Instruction::Buy(_) => "Buy",
             Instruction::Withdraw(_) => "Withdraw",
             Instruction::ObtainTicket(_) => "ObtainTicket",

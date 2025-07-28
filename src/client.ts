@@ -13,17 +13,16 @@ import {mintTokens} from "./commands/mint-tokens";
 import {TokenAmount, withdraw} from "./commands/withdraw";
 import {migrate} from "./commands/migrate";
 import {mintNft} from "./commands/mint-nft";
-import {secrets} from "./secrets";
 import {updateState} from "./commands/update-state";
 import {transfer} from "./commands/transfer";
+import {createAta} from "./commands/create-ata";
+import {getState} from "./commands/get-state";
+import {adminWithdraw} from "./commands/admin-withdraw";
+import {newKey} from "./commands/new-key";
+import {PARAMS} from "./parameters";
+import {PAYER} from "./secrets";
+import {unpackTx} from "./commands/unpack-tx";
 
-const programId = new PublicKey("HDcKzEZqr13G1rbC24pCN1CKSxKjf7JknC5a8ytX5hoN");
-const usdcMint = new PublicKey("Bf8SC6jEMH2sZ5wTK8nKrc9MeKUDwjNNGfC1fFFKEckF");
-const borgMint = new PublicKey("CVGgUEBWVbKNipC7o37txsDeAyuqG1CMJYiEouReYPg3");
-const gnetMint = new PublicKey("3S3XeNPwrETmAQD2kpkrGwxRqwAn7jLidzdRXX1aCepg");
-const xbgMint = new PublicKey("G3bE5wX4fH2sFpjUbECxe62qMEK1V7kY6Ab9m2CG3mij");
-const borgyMint = new PublicKey("A3CmjFeRJ3864nJWcvy8J22vdUSLx3zRLifvCpqATLFz");
-const lootboxId = 3;
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
 
@@ -34,114 +33,7 @@ const lootboxId = 3;
     return this.toString();
 };
 
-const connection = new Connection(`https://side-special-sunset.solana-devnet.quiknode.pro/${secrets.quick_node_key}`, "confirmed");
-
-// async function main1() {
-//     const blockhashInfo = await connection.getLatestBlockhash();
-//
-//     let tx = new Transaction(blockhashInfo);
-//     let tokenId = Keypair.generate();
-//
-//     console.info("Token Id: " + tokenId.publicKey);
-//
-//     const rentExemptMintLamports = await spl.getMinimumBalanceForRentExemptMint(connection);
-//
-//     let invoicePda = PublicKey.findProgramAddressSync([Buffer.from("invoice_seed"), PAYER.publicKey.toBuffer()], programId)
-//     console.info("Invoice PDA: " + invoicePda[0] + ", bump: " + invoicePda[1]);
-//
-//     let authorityPda = PublicKey.findProgramAddressSync([Buffer.from("mint_authority_seed")], programId);
-//     console.info("authority PDA: " + authorityPda[0] + ", bump: " + authorityPda[1]);
-//
-//     let umiContext = umiBundle
-//         .createUmi(connection)
-//         .use(keypairIdentity(fromWeb3JsKeypair(PAYER)));
-//
-//     let tokenMetadataPda = mpl.findMetadataPda(umiContext, {mint: fromWeb3JsPublicKey(tokenId.publicKey)});
-//     let tokenMasterPda = mpl.findMasterEditionPda(umiContext, {mint: fromWeb3JsPublicKey(tokenId.publicKey)});
-//     let mplId = toWeb3JsPublicKey(mpl.getMplTokenMetadataProgramId(umiContext));
-//
-//     // let umiMint = umi.createSignerFromKeypair(umiContext, fromWeb3JsKeypair(tokenId));
-//     //
-//     // let umiInstructions = mpl.createV1(umiContext, {
-//     //     mint: umiMint,
-//     //     name: "DLS 1",
-//     //     tokenStandard: TokenStandard.NonFungible,
-//     //     uri: 'https://lootbox.agorahub.io/solana/dls1/' + tokenId.publicKey.toString(),
-//     //     sellerFeeBasisPoints: umi.percentAmount(6),
-//     // }).getInstructions();
-//     //
-//     // console.info(umiInstructions[0].keys);
-//
-//     // inst.map(toWeb3JsInstruction)
-//     //     .forEach(value => value.keys.forEach(console.info));
-//     // let mintAuthority = PublicKey.findProgramAddressSync(
-//     //     [Buffer.from("mint_authority_seed")],
-//     //     programId
-//     // );
-//
-//     // tx.add(SystemProgram.transfer(
-//     //     {
-//     //         programId: SystemProgram.programId,
-//     //         lamports:
-//     //     }
-//     // ))
-//
-//     // create token
-//     tx.add(
-//         // create token account
-//         SystemProgram.createAccount({
-//             fromPubkey: PAYER.publicKey,
-//             newAccountPubkey: tokenId.publicKey,
-//             space: spl.MINT_SIZE,
-//             lamports: rentExemptMintLamports,
-//             programId: spl.TOKEN_PROGRAM_ID,
-//         }),
-//         // initialize token account
-//         spl.createInitializeMintInstruction(
-//             tokenId.publicKey,
-//             0,
-//             authorityPda[0],
-//             authorityPda[0],
-//             spl.TOKEN_PROGRAM_ID
-//         ),
-//     )
-//
-//     let destinationAta = spl.getAssociatedTokenAddressSync(tokenId.publicKey, PAYER.publicKey);
-//     tx.add(
-//         // create destination account
-//         spl.createAssociatedTokenAccountInstruction(
-//             PAYER.publicKey,
-//             destinationAta,
-//             PAYER.publicKey,
-//             tokenId.publicKey
-//         )
-//     );
-//
-//     tx.add(
-//         new TransactionInstruction({
-//             programId: programId,
-//             keys: [
-//                 {pubkey: PAYER.publicKey, isWritable: false, isSigner: true},
-//                 {pubkey: tokenId.publicKey, isWritable: true, isSigner: false},
-//                 {pubkey: authorityPda[0], isWritable: true, isSigner: false},
-//                 {pubkey: destinationAta, isWritable: true, isSigner: false},
-//                 {pubkey: toWeb3JsPublicKey(tokenMetadataPda["0"]), isWritable: true, isSigner: false},
-//                 {pubkey: toWeb3JsPublicKey(tokenMasterPda["0"]), isWritable: true, isSigner: false},
-//                 {pubkey: spl.TOKEN_PROGRAM_ID, isWritable: false, isSigner: false},
-//                 {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
-//                 {pubkey: mplId, isWritable: false, isSigner: false},
-//                 {pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isWritable: false, isSigner: false},
-//             ],
-//             data: Buffer.from([authorityPda[1]]),
-//         })
-//     );
-//
-//     tx.sign(PAYER);
-//
-//     let hash = await sendAndConfirmTransaction(connection, tx, [PAYER, tokenId]);
-//     console.log("tx hash: " + hash);
-//     // console.log("Dry run");
-// }
+const connection = new Connection(PARAMS.endpoint, "confirmed");
 
 function parseSignature(value: string): Signature {
     if (!value.startsWith("0x") && !value.startsWith("0X")) {
@@ -167,10 +59,10 @@ async function main (argv: string[]) {
     }
     switch (argv[2].toLowerCase()) {
         case "buy":
-            await buy(connection, programId, lootboxId, borgMint);
+            await buy(connection, PARAMS.programId, PAYER, PARAMS.lootboxId, PARAMS.borgMint);
             break;
         case "init":
-            await init(connection, programId, lootboxId, usdcMint, borgMint);
+            await init(connection, PARAMS.programId, PARAMS.lootboxId, PARAMS.signer, PARAMS.usdcMint, PARAMS.borgMint);
             break;
         case "new-admin":
             await newAdmin(connection);
@@ -181,7 +73,7 @@ async function main (argv: string[]) {
             }
             let expiredAt = Number.parseInt(argv[3]);
             let ticketIdsRaw = JSON.parse(argv[4]);
-            let ticketIds: PublicKey[];
+            let ticketIds: PublicKey[] = [];
             if (typeof ticketIdsRaw == "string") {
                 ticketIds = [new PublicKey(ticketIdsRaw)];
             }
@@ -198,8 +90,9 @@ async function main (argv: string[]) {
             let signature = parseSignature(argv[6]);
             await withdraw(
                 connection,
-                programId,
-                lootboxId,
+                PAYER,
+                PARAMS.programId,
+                PARAMS.lootboxId,
                 expiredAt,
                 ticketIds,
                 rewards,
@@ -230,13 +123,13 @@ async function main (argv: string[]) {
             let ticketId = Number.parseInt(argv[3]);
             let expiredAt = Number.parseInt(argv[4]);
             let signature = parseSignature(argv[5]);
-            await obtain(connection, programId, lootboxId, ticketId, expiredAt, signature);
+            await obtain(connection, PARAMS.programId, PAYER, PARAMS.lootboxId, ticketId, expiredAt, signature);
             break;
         case "migrate":
-            await migrate(connection, programId, lootboxId);
+            await migrate(connection, PARAMS.programId, PARAMS.lootboxId);
             break;
         case "update-state":
-            await updateState(connection, programId, lootboxId);
+            await updateState(connection, PARAMS.programId, PARAMS.lootboxId);
             break;
         case "mint-nft": {
             if (argv.length != 4) {
@@ -257,8 +150,44 @@ async function main (argv: string[]) {
             await transfer(connection, mint, amount, destination);
             break;
         }
+        case "create-ata": {
+            if (argv.length != 5) {
+                throw new Error("Usage: npm run action create-ata <mint> <destination>.");
+            }
+            let mint = new PublicKey(argv[3]);
+            let destination = new PublicKey(argv[4]);
+
+            await createAta(connection, mint, destination);
+            break;
+        }
+        case "get-state": {
+            await getState(connection, PARAMS.programId, PARAMS.lootboxId);
+            break;
+        }
+        case "admin-withdraw": {
+            if (argv.length != 5) {
+                throw new Error("Usage: npm run action admin-withdraw <mint> <amount>.");
+            }
+            let mint = new PublicKey(argv[3]);
+            let amount = parseInt(argv[4]);
+            await adminWithdraw(connection, PARAMS.programId, PARAMS.lootboxId, {tokenMint: mint, amount: amount});
+            break;
+        }
+        case "new-key": {
+            let prefix = argv[3];
+            await newKey(connection, prefix);
+            break;
+        }
+        case "unpack-tx": {
+            if (argv.length != 4) {
+                throw new Error("Usage: npm run action unpack-tx <base64tx>.");
+            }
+
+            await unpackTx(argv[3]);
+            break;
+        }
         default:
-            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer>");
+            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw|new-key|unpack-tx>");
     }
 }
 
