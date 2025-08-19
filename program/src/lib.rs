@@ -88,7 +88,7 @@ fn process_instruction<'a>(
             let admin = next_account_info(accounts_iter)?;
             let state_pda = next_account_info(accounts_iter)?;
 
-            update_state(program_id, admin, state_pda, params)?;
+            update_state(program_id, admin, state_pda, params, accounts_iter)?;
 
         }
         Instruction::AdminWithdraw { lootbox_id, amount } => {
