@@ -54,6 +54,7 @@ pub struct UpdateStateParams {
     pub end_ts: u32,
     pub price_ata: Pubkey,
     pub price_amount: u64,
+    pub prices: Vec<u64>,
 }
 
 impl UpdateStateParams {
@@ -61,6 +62,7 @@ impl UpdateStateParams {
     const BEGIN_TS: u32 = 2;
     const END_TS: u32 = 4;
     const PRICE: u32 = 8;
+    const PRICES: u32 = 16;
 
     fn is_field(&self, flag: u32) -> bool {
         (self.enabled_fields & flag) == flag
@@ -80,6 +82,10 @@ impl UpdateStateParams {
 
     pub fn is_price(&self) -> bool {
         self.is_field(Self::PRICE)
+    }
+
+    pub fn is_prices(&self) -> bool {
+        self.is_field(Self::PRICES)
     }
 }
 

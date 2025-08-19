@@ -1,18 +1,20 @@
-use solana_program::account_info::AccountInfo;
+use solana_program::account_info::{next_account_info, AccountInfo};
 use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
 use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
+use std::slice::Iter;
 
 use crate::error::CustomError;
 use crate::instruction::UpdateStateParams;
-use crate::state::State;
+use crate::state::{Price, State};
 
 pub fn update_state<'a>(
     program_id: &Pubkey,
     admin: &AccountInfo<'a>,
     state_pda: &AccountInfo<'a>,
     params: UpdateStateParams,
+    accounts_iter: &mut Iter<AccountInfo<'a>>,
 ) -> ProgramResult {
     if !admin.is_signer {
         return Err(CustomError::WrongSigner.into());
@@ -46,6 +48,18 @@ pub fn update_state<'a>(
 
         msg!("Update price for token ATA {} from {} to {}.", params.price_ata, price.amount, params.price_amount);
         price.amount = params.price_amount;
+    }
+
+    if params.is_prices() {
+        state.prices = Vec::with_capacity(params.prices.len());
+        for amount in &params.prices {
+            let account = next_account_info(accounts_iter)?;
+            state.prices.push(Price {
+                amount: *amount,
+                ata: *account.key,
+            });
+        }
+        msg!("Update {} prices.", state.prices.len());
     }
 
     msg!("Save state.");

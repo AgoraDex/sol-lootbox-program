@@ -82,7 +82,7 @@ fn create_state<'a>(program_id: &Pubkey,
                     system_account: &AccountInfo<'a>,
                     params: &InitializeParams,
                     accounts_iter: &mut Iter<AccountInfo<'a>>,
-                    ) -> ProgramResult {
+) -> ProgramResult {
     msg!("Get state address using id {} and bump {}", params.lootbox_id, params.state_bump);
     let seed = [admin.key.as_ref(), STATE_SEED, &params.lootbox_id.to_be_bytes(), &[params.state_bump]];
     let state_pub = &Pubkey::create_program_address(&seed, program_id)?;
@@ -121,7 +121,7 @@ fn create_state<'a>(program_id: &Pubkey,
         base_url: params.base_url.clone(),
         withdraw_counter: 0,
     };
-        let lamports = Rent::get()?.minimum_balance(State::MAX_STATE_SIZE);
+    let lamports = Rent::get()?.minimum_balance(State::MAX_STATE_SIZE);
 
     invoke_signed(
         &create_account(
