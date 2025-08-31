@@ -23,6 +23,8 @@ import {PARAMS} from "./parameters";
 import {PAYER} from "./secrets";
 import {unpackTx} from "./commands/unpack-tx";
 import {updatePrice} from "./commands/update-price";
+import {updatePrices} from "./commands/update-prices";
+import {oldWithdraw} from "./commands/old-withdraw";
 
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
@@ -68,9 +70,10 @@ async function main (argv: string[]) {
         case "new-admin":
             await newAdmin(connection);
             break;
+        case "old-withdraw":
         case "withdraw": {
             if (argv.length != 7) {
-                throw new Error("Usage: npm run action withdraw <expiredAt> '[<ticketIds>,..]' '[{tokenMint: <mint>, amount: <amount>},..]' <signatureHex>.");
+                throw new Error("Usage: npm run action [old-]withdraw <expiredAt> '[<ticketIds>,..]' '[{tokenMint: <mint>, amount: <amount>},..]' <signatureHex>.");
             }
             let expiredAt = Number.parseInt(argv[3]);
             let ticketIdsRaw = JSON.parse(argv[4]);
@@ -89,16 +92,33 @@ async function main (argv: string[]) {
             let rewards = rewardsRaw.map(o => new TokenAmount(o.tokenMint, o.amount)) as TokenAmount[];
 
             let signature = parseSignature(argv[6]);
-            await withdraw(
-                connection,
-                PAYER,
-                PARAMS.programId,
-                PARAMS.lootboxId,
-                expiredAt,
-                ticketIds,
-                rewards,
-                signature
-            );
+            switch (argv[2].toLowerCase()) {
+                case "old-withdraw":
+                    await oldWithdraw(
+                        connection,
+                        PAYER,
+                        PARAMS.programId,
+                        PARAMS.lootboxId,
+                        expiredAt,
+                        ticketIds,
+                        rewards,
+                        signature
+                    );
+                    break;
+                case "withdraw":
+                    await withdraw(
+                        connection,
+                        PAYER,
+                        PARAMS.programId,
+                        PARAMS.lootboxId,
+                        expiredAt,
+                        ticketIds,
+                        rewards,
+                        signature
+                    );
+                    break;
+
+            }
             break;
         }
         case "console":
@@ -195,8 +215,12 @@ async function main (argv: string[]) {
             await updatePrice(connection, PARAMS.programId, PARAMS.lootboxId, new PublicKey(argv[3]), argv[4]);
             break;
         }
+        case "update-prices": {
+            await updatePrices(connection, PARAMS.programId, PARAMS.lootboxId, PARAMS.usdcMint, PARAMS.borgMint);
+            break;
+        }
         default:
-            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw|new-key|unpack-tx|update-price>");
+            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw|new-key|unpack-tx|update-price|update-prices|old-withdraw>");
     }
 }
 

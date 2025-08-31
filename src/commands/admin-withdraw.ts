@@ -27,12 +27,12 @@ export async function adminWithdraw(connection: Connection, programId: PublicKey
     console.info(`Vault: ${vaultPda}`);
     let [statePda, stateBump] = findStateAddress(ADMIN.publicKey, lootboxId, programId);
 
-    let accountInfo = await connection.getParsedAccountInfo(statePda);
-    if (accountInfo.value == null) {
-        throw new Error(`There is no account ${statePda}`);
-    }
-    let state = loadState(accountInfo.value);
-    console.info(`State: ${statePda}, withdrawCounter: ${state.withdrawCounter}`);
+    // let accountInfo = await connection.getParsedAccountInfo(statePda);
+    // if (accountInfo.value == null) {
+    //     throw new Error(`There is no account ${statePda}`);
+    // }
+    // let state = loadState(accountInfo.value);
+    // console.info(`State: ${statePda}, withdrawCounter: ${state.withdrawCounter}`);
 
     // let computeInstruction =  ComputeBudgetProgram.setComputeUnitLimit({units: 400_000})
 

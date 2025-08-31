@@ -1,4 +1,4 @@
-import {PROFILE, PROFILE_DEVNET, PROFILE_DEVNET_OLD, PROFILE_MAINNET} from "./profile";
+import {PROFILE, PROFILE_DEVNET, PROFILE_DEVNET_OLD, PROFILE_MAINNET, PROFILE_MAINNET_OLD} from "./profile";
 import {PublicKey} from "@solana/web3.js";
 import {secrets} from "./secrets";
 
@@ -17,6 +17,18 @@ interface IParams {
 }
 
 params[PROFILE_MAINNET] = {
+    programId: new PublicKey("AGLBDv2cn7RD5GzJi46zxqqPNvF3GREQdVYkZzhxV3wv"),
+    usdcMint: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+    borgMint: new PublicKey("3dQTr7ror2QPKQ3GbBCokJUmjErGg8kTJzdnYjNfvi3Z"),
+    xbgMint: new PublicKey("XBGdqJ9P175hCC1LangCEyXWNeCPHaKWA17tymz2PrY"),
+    borgyMint: new PublicKey("BorGY4ub2Fz4RLboGxnuxWdZts7EKhUTB624AFmfCgX"),
+    gnetMint: undefined,
+    lootboxId: 3,
+    endpoint: `https://burned-weathered-dinghy.solana-mainnet.quiknode.pro/${secrets.quick_node_key}`,
+    signer: Buffer.from("020b9ecdce09a6ad4e6d0de60f604618aaceec4cb533b1d1e1becb1901c8215515", "hex"),
+};
+
+params[PROFILE_MAINNET_OLD] = {
     programId: new PublicKey("9eMe9ZfiBf8mtcB6RqP45xR4HRoYBRmfcR98EuxXba3X"),
     usdcMint: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
     borgMint: new PublicKey("3dQTr7ror2QPKQ3GbBCokJUmjErGg8kTJzdnYjNfvi3Z"),
@@ -24,8 +36,8 @@ params[PROFILE_MAINNET] = {
     borgyMint: new PublicKey("BorGY4ub2Fz4RLboGxnuxWdZts7EKhUTB624AFmfCgX"),
     gnetMint: undefined,
     lootboxId: 1,
-    endpoint: `https://side-special-sunset.solana-mainnet.quiknode.pro/${secrets.quick_node_key}`,
-    signer: Buffer.from("TODO", "hex"),
+    endpoint: `https://burned-weathered-dinghy.solana-mainnet.quiknode.pro/${secrets.quick_node_key}`,
+    signer: Buffer.from("020b9ecdce09a6ad4e6d0de60f604618aaceec4cb533b1d1e1becb1901c8215515", "hex"),
 };
 
 params[PROFILE_DEVNET_OLD] = {
@@ -48,7 +60,7 @@ params[PROFILE_DEVNET] = {
     borgyMint: new PublicKey("A3CmjFeRJ3864nJWcvy8J22vdUSLx3zRLifvCpqATLFz"),
     gnetMint: new PublicKey("3S3XeNPwrETmAQD2kpkrGwxRqwAn7jLidzdRXX1aCepg"),
     lootboxId: 6,
-    endpoint: `https://side-special-sunset.solana-devnet.quiknode.pro/${secrets.quick_node_key}`,
+    endpoint: `https://api.devnet.solana.com`,
     signer: Buffer.from("033e2222644f8d418e9b51622ba74eb23313c7cabbba68d45d767ae321bd34b5eb", "hex"),
 }
 
