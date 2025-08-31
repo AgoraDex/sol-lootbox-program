@@ -6,8 +6,8 @@ import {
     TransactionInstruction
 } from "@solana/web3.js";
 import {ADMIN} from "../secrets";
-import {Migrate, serializeMigrate, serializeUpdateState, UpdateState} from "../instruction";
-import {findStateAddress, loadState, STATE_SEED, VAULT_SEED} from "../state";
+import {serializeUpdateState, UpdateState} from "../instruction";
+import {findStateAddress, loadState, VAULT_SEED} from "../state";
 
 export async function updateState(connection: Connection, programId: PublicKey, lootboxId: number) {
     const blockhashInfo = await connection.getLatestBlockhash();
@@ -30,8 +30,7 @@ export async function updateState(connection: Connection, programId: PublicKey, 
     let params = new UpdateState(
         lootboxId,
         stateBump,
-        500
-    );
+    ).withBeginTs(1753785363);
 
     console.log(`Data: ${Buffer.from(serializeUpdateState(params)).toString('hex')}`);
 

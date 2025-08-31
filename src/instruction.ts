@@ -71,6 +71,7 @@ const MAX_SUPPLY: u32 = 1;
 const BEGIN_TS: u32 = 2;
 const END_TS: u32 = 4;
 const PRICE: u32 = 8;
+const PRICES: u32 = 16;
 
 export class UpdateState {
     static readonly SCHEMA = BorshSchema.Struct({
@@ -83,6 +84,7 @@ export class UpdateState {
         endTs: BorshSchema.u32,
         priceAta: BorshSchema.Array(BorshSchema.u8, 32),
         priceAmount: BorshSchema.u64,
+        prices: BorshSchema.Vec(BorshSchema.u64),
     });
 
     instruction: InstructionType = InstructionType.UpdateState;
@@ -92,8 +94,9 @@ export class UpdateState {
     maxSupply: number = 0;
     beginTs: number = 0;
     endTs: number = 0;
-    priceAta: Uint8Array = [];
+    priceAta: Uint8Array = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     priceAmount: number = 0;
+    prices: number[];
 
     constructor(lootboxId: number, stateBump: number) {
         this.lootboxId = lootboxId;
@@ -122,6 +125,12 @@ export class UpdateState {
         this.priceAta = ata;
         this.priceAmount = amount;
         this.enabledFields |= PRICE;
+        return this;
+    }
+
+    public withPrices(value: number[]) : UpdateState {
+        this.prices = value;
+        this.enabledFields |= PRICES;
         return this;
     }
 }
@@ -188,6 +197,32 @@ export class ObtainTicket {
     }
 }
 
+export class OldWithdraw {
+    readonly static SCHEMA = BorshSchema.Struct({
+        instruction: BorshSchema.u8,
+        lootboxId: BorshSchema.u16,
+        expireAt: BorshSchema.u32,
+        signature: Signature.SCHEMA,
+        tickets: BorshSchema.u8,
+        amounts: BorshSchema.Vec(BorshSchema.u64),
+    });
+
+    instruction: InstructionType = InstructionType.OldWithdraw;
+    lootboxId: number;
+    tickets: number;
+    amounts: number[];
+    expireAt: number;
+    signature: Signature;
+
+    constructor(lootboxId: number, tickets: number, amounts: number[], expireAt: number, signature: Signature) {
+        this.lootboxId = lootboxId;
+        this.tickets = tickets;
+        this.amounts = amounts;
+        this.expireAt = expireAt;
+        this.signature = signature;
+    }
+}
+
 export class Withdraw {
     static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
@@ -241,6 +276,10 @@ export function serializeBuy(instruction: Buy): Buffer {
 
 export function serializeObtainTicket(instruction: ObtainTicket): Uint8Array {
     return borshSerialize(ObtainTicket.SCHEMA, instruction);
+}
+
+export function serializeOldWithdraw(instruction: OldWithdraw): Uint8Array {
+    return borshSerialize(OldWithdraw.SCHEMA, instruction);
 }
 
 export function serializeWithdraw(instruction: Withdraw): Uint8Array {
