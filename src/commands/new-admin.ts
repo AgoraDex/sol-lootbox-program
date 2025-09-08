@@ -12,10 +12,10 @@ export async function newAdmin(connection: Connection) {
     // let balanceForRentExemption2 = await connection.getMinimumBalanceForRentExemption(16);
     console.info(`Admin balance: ${adminBalance} but ${balanceForRentExemption} must be left.`);
     let newKey = Keypair.generate();
-    let kp = Keypair.fromSeed(new Buffer("cac0a5f24a99903bb12895bf430a241cc592fd2396b78aa599f0a498cb066dff", "hex"));
-    bs58.encode(kp.secretKey);
+    console.log(newKey.publicKey.toBase58());
+    console.log(newKey.secretKey);
 
-
+    return;
     updateAdmin(newKey);
     let toTransfer = Math.max(0, adminBalance - balanceForRentExemption);
     // toTransfer = Math.max(0, adminBalance - balanceForRentExemption2);

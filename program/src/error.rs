@@ -50,6 +50,10 @@ pub enum CustomError {
     WrongTicketOwner,
     #[error("The specified instruction is not supported anymore.")]
     InstructionNotSupported,
+    #[error("There is not more space to add new one ticket to the state.")]
+    NoMoreSpaceForSpecialWithdrawTicket,
+    #[error("The specified ticket has been already withdrew.")]
+    TicketAlreadyWithdrawn,
 }
 
 impl From<CustomError> for ProgramError {

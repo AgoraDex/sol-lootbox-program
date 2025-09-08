@@ -96,11 +96,10 @@ async function main (argv: string[]) {
                 case "old-withdraw":
                     await oldWithdraw(
                         connection,
-                        PAYER,
                         PARAMS.programId,
                         PARAMS.lootboxId,
                         expiredAt,
-                        ticketIds,
+                        ticketIdsRaw,
                         rewards,
                         signature
                     );

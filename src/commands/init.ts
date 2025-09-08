@@ -29,12 +29,12 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
         lootboxId,
         vaultBump,
         stateBump,
-        1000,
-        1755524583,
-        1755961200,
+        125000,
+        1756918687,
+        1788454695,
         new Uint8Array(signer),
-        "Solana Lootbox v2 Frogana",
-        [5_000_000],
+        "Solana Lootbox v2 Infinity",
+        [1_000_000, 4_000_000_000],
         ""
     );
 
@@ -55,19 +55,19 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
         );
     }
 
-    // let paymentAta2 = await spl.getAssociatedTokenAddress(paymentToken2, vaultPda, true);
-    // console.info(`Price ATA 2: ${paymentAta2}`);
-    // let paymentAtaAccount2 = await connection.getAccountInfo(paymentAta2);
-    // if (paymentAtaAccount2 == null) {
-    //     tx.add(
-    //         spl.createAssociatedTokenAccountInstruction(
-    //             ADMIN.publicKey,
-    //             paymentAta2,
-    //             vaultPda,
-    //             paymentToken2
-    //         )
-    //     );
-    // }
+    let paymentAta2 = await spl.getAssociatedTokenAddress(paymentToken2, vaultPda, true);
+    console.info(`Price ATA 2: ${paymentAta2}`);
+    let paymentAtaAccount2 = await connection.getAccountInfo(paymentAta2);
+    if (paymentAtaAccount2 == null) {
+        tx.add(
+            spl.createAssociatedTokenAccountInstruction(
+                ADMIN.publicKey,
+                paymentAta2,
+                vaultPda,
+                paymentToken2
+            )
+        );
+    }
 
     tx.add(
         new TransactionInstruction({
@@ -78,7 +78,7 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
                 {pubkey: statePda, isWritable: true, isSigner: false},
                 {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
                 {pubkey: paymentAta1, isWritable: false, isSigner: false},
-                // {pubkey: paymentAta2, isWritable: false, isSigner: false},
+                {pubkey: paymentAta2, isWritable: false, isSigner: false},
             ],
             data: Buffer.from(serializeInitialize(init)),
         })
