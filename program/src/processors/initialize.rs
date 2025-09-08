@@ -96,17 +96,7 @@ fn create_state<'a>(program_id: &Pubkey,
         return Err(CustomError::StateAlreadyInitialized.into());
     }
 
-    msg!("Build prices set");
-    let mut prices: Vec<Price> = Vec::with_capacity(params.prices.len());
-    for amount in &params.prices {
-        let account = next_account_info(accounts_iter)?;
-        prices.push(Price {
-            amount: *amount,
-            ata: *account.key,
-        });
-    }
-
-    let state = State {
+    let mut state = State {
         version: StateVersion::Version4,
         id: params.lootbox_id,
         total_supply: 0,
@@ -116,11 +106,22 @@ fn create_state<'a>(program_id: &Pubkey,
         owner: *admin.key,
         name: params.name.clone(),
         signer: params.signer,
-        prices,
+        prices: Vec::with_capacity(params.prices.len()),
         vault_bump: params.vault_bump,
-        base_url: params.base_url.clone(),
         withdraw_counter: 0,
+        special_withdraw_max_index: params.special_withdraw_max_index,
+        special_withdraw_tickets: [0u16; 100],
     };
+
+    msg!("Build prices set");
+    for amount in &params.prices {
+        let account = next_account_info(accounts_iter)?;
+        state.prices.push(Price {
+            amount: *amount,
+            ata: *account.key,
+        });
+    }
+
     let lamports = Rent::get()?.minimum_balance(State::MAX_STATE_SIZE);
 
     invoke_signed(

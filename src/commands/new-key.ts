@@ -2,8 +2,7 @@ import {Connection, Keypair} from "@solana/web3.js";
 import bs58 from 'bs58';
 
 export async function newKey(connection: Connection, prefix: string) {
-    // let newKey = Keypair.generate();
-    let newKey = Keypair.fromSecretKey(bs58.decode("547Z9vBd129cJA7J5zhfdNWgahQRhQSeA8AGmYic9ejceHuwk53mXavEf5X2ReuYX7BguCQWZ1oPPQHx1gXMvF6w"));
+    let newKey = Keypair.generate();
 
     if (prefix != null) {
         // check it's correct prefix

@@ -1,6 +1,7 @@
 use crate::error::CustomError;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::account_info::AccountInfo;
+use solana_program::clock::{Clock, UnixTimestamp};
 use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
 use solana_program::program_error::ProgramError;
@@ -9,25 +10,9 @@ use std::cmp::{min, PartialEq};
 use std::io::Cursor;
 use std::mem::size_of;
 use std::ops::{Deref, DerefMut};
-use solana_program::clock::{Clock, UnixTimestamp};
 
 pub const STATE_SEED: &[u8] = b"state";
 pub const VAULT: &[u8] = b"vault";
-#[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct StateV3 {
-    pub version: StateVersion,
-    pub owner: Pubkey,
-    pub vault_bump: u8,
-    pub total_supply: u32,
-    pub max_supply: u32,
-    pub name: String,
-    pub signer: [u8; 33],
-    pub price: u64,
-    pub base_url: String,
-    pub payment_ata: Pubkey,
-    // pub first_index: u32,
-    pub withdraw_counter: u32, // used for synchronization
-}
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Price {
@@ -48,8 +33,9 @@ pub struct State {
     pub name: String,
     pub signer: [u8; 33],
     pub prices: Vec<Price>,
-    pub base_url: String,
     pub withdraw_counter: u32, // used for synchronization
+    pub special_withdraw_max_index: u16,
+    pub special_withdraw_tickets: [u16; 100],
 }
 
 #[derive(Debug, PartialEq, BorshSerialize, BorshDeserialize)]
@@ -61,10 +47,11 @@ pub enum StateVersion {
     Version2 = 2,
     Version3 = 3,
     Version4 = 4,
+    Version5 = 5,
 }
 
 impl State {
-    pub const MAX_STATE_SIZE: usize = size_of::<State>() + 1024;
+    pub const MAX_STATE_SIZE: usize = size_of::<State>() + 128;
 
     pub fn verify_and_load(program_id: &Pubkey, state_pda: &AccountInfo, lootbox_id: u16, bump: Option<u8>) -> Result<State, ProgramError> {
         if !State::if_initialized(state_pda) {
@@ -185,6 +172,20 @@ impl State {
     pub fn check_vault(&self, program_id: &Pubkey, vault_pda: &AccountInfo) -> ProgramResult {
         self.check_vault_with_seed(program_id, vault_pda, &[&self.owner.to_bytes(), VAULT, &[self.vault_bump]])
     }
+
+    pub fn special_withdraw_lookup_or_insert(&mut self, lookup_ticket: u16) -> Result<bool, ProgramError> {
+        for (_, ticket) in self.special_withdraw_tickets.iter_mut().enumerate() {
+            if *ticket == lookup_ticket {
+                return Ok(true)
+            }
+
+            if *ticket == 0 {
+                *ticket = lookup_ticket;
+                return Ok(false)
+            }
+        }
+        Err(CustomError::NoMoreSpaceForSpecialWithdrawTicket.into())
+    }
 }
 
 #[test]
@@ -208,8 +209,9 @@ fn test_save_to() {
         signer,
         vault_bump: 255,
         prices: vec!(Price { amount: 123, ata: Pubkey::new_unique() }),
-        base_url: "https://example.com/".to_string(),
         withdraw_counter: 0,
+        special_withdraw_tickets: [0u16; 100],
+        special_withdraw_max_index: 0,
     };
 
     let mut buf: Vec<u8> = Vec::with_capacity(State::MAX_STATE_SIZE);

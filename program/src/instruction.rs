@@ -11,6 +11,7 @@ pub enum Instruction {
     ObtainTicket(ObtainTicketParams) = 3,
     Buy(BuyParam) = 4,
     Withdraw(WithdrawParam) = 5,
+    SpecialWithdraw(SpecialWithdrawParam) = 6,
     UpdateState(UpdateStateParams) = 252,
     MigrateToV3(MigrateToV3Params) = 253,
     AdminWithdraw {
@@ -36,7 +37,8 @@ pub struct InitializeParams {
     pub signer: [u8; 33],
     pub name: String,
     pub prices: Vec<u64>,
-    pub base_url: String,
+    pub special_withdraw_size: u8,
+    pub special_withdraw_max_index: u16
 }
 
 #[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
@@ -118,6 +120,15 @@ pub struct WithdrawParam {
     pub amounts: Vec<u64>, // 1 for NFT
 }
 
+#[derive(Clone, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
+pub struct SpecialWithdrawParam {
+    pub lootbox_id: u16,
+    pub expire_at: u32,
+    pub signature: Signature,
+    pub amounts: Vec<u64>, // 1 for NFT
+    pub tickets: Vec<u16>,
+}
+
 impl Instruction {
     pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
         let instruction = Instruction::try_from_slice(input)?;
@@ -131,6 +142,7 @@ impl Instruction {
             Instruction::OldWithdraw => "OldWithdraw (deprecated)",
             Instruction::Buy(_) => "Buy",
             Instruction::Withdraw(_) => "Withdraw",
+            Instruction::SpecialWithdraw(_) => "SpecialWithdraw",
             Instruction::ObtainTicket(_) => "ObtainTicket",
             Instruction::MigrateToV3(_) => "MigrationToV3",
             Instruction::AdminWithdraw { .. } => "AdminWithdraw",

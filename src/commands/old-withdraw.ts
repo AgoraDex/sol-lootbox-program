@@ -10,12 +10,10 @@ import {
 } from "@solana/web3.js";
 import {ADMIN, PAYER} from "../secrets";
 import {findStateAddress, loadState, VAULT_SEED} from "../state";
-import {OldWithdraw, serializeOldWithdraw, Signature} from "../instruction";
+import {serializeSpecialWithdraw, Signature, SpecialWithdraw} from "../instruction";
 import * as spl from "@solana/spl-token";
-import * as umiBundle from "@metaplex-foundation/umi-bundle-defaults";
 import * as web3 from "@solana/web3.js";
-import {keypairIdentity} from "@metaplex-foundation/umi";
-import {fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey} from "@metaplex-foundation/umi-web3js-adapters";
+import {toWeb3JsPublicKey} from "@metaplex-foundation/umi-web3js-adapters";
 import * as mpl from "@metaplex-foundation/mpl-token-metadata";
 
 export class TokenAmount {
@@ -35,7 +33,7 @@ const MAX_TX_SIZE = web3.PACKET_DATA_SIZE;
 /**
  * Instruction added for backward compatibility.
  */
-export async function oldWithdraw(connection: Connection, programId: PublicKey, lootboxId: number, expiredAt: number, ticketIds: PublicKey[], tokenRewards: TokenAmount[], signature: Signature) {
+export async function oldWithdraw(connection: Connection, programId: PublicKey, lootboxId: number, expiredAt: number, ticketIds: number[], tokenRewards: TokenAmount[], signature: Signature) {
     let blockhashInfo = await connection.getLatestBlockhash();
 
     let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId);
@@ -57,25 +55,8 @@ export async function oldWithdraw(connection: Connection, programId: PublicKey, 
         {pubkey: vaultPda, isWritable: false, isSigner: false},
         {pubkey: statePda, isWritable: true, isSigner: false},
         {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
-        {pubkey: web3.SYSVAR_INSTRUCTIONS_PUBKEY, isWritable: false, isSigner: false},
         {pubkey: spl.TOKEN_PROGRAM_ID, isWritable: false, isSigner: false},
-        {pubkey: mplId, isWritable: false, isSigner: false},
     ];
-
-    let umiContext = umiBundle
-        .createUmi(connection)
-        .use(keypairIdentity(fromWeb3JsKeypair(PAYER)));
-
-    for (let ticketMint of ticketIds) {
-        let ticketAta = spl.getAssociatedTokenAddressSync(ticketMint, PAYER.publicKey);
-        let [tokenMetadataPda] = mpl.findMetadataPda(umiContext, {mint: fromWeb3JsPublicKey(ticketMint)});
-        let [tokenMasterPda] = mpl.findMasterEditionPda(umiContext, {mint: fromWeb3JsPublicKey(ticketMint)});
-
-        accounts.push({pubkey: ticketMint, isSigner: false, isWritable: true});
-        accounts.push({pubkey: ticketAta, isSigner: false, isWritable: true});
-        accounts.push({pubkey: toWeb3JsPublicKey(tokenMetadataPda), isSigner: false, isWritable: true});
-        accounts.push({pubkey: toWeb3JsPublicKey(tokenMasterPda), isSigner: false, isWritable: true});
-    }
 
     let amounts: number[] = [];
     let ataInstructions: TransactionInstruction[] = [];
@@ -102,9 +83,9 @@ export async function oldWithdraw(connection: Connection, programId: PublicKey, 
         amounts.push(tokenReward.amount);
     }
 
-    let instructionData = new OldWithdraw(
+    let instructionData = new SpecialWithdraw(
         lootboxId,
-        ticketIds.length,
+        ticketIds,
         amounts,
         expiredAt,
         signature
@@ -113,7 +94,7 @@ export async function oldWithdraw(connection: Connection, programId: PublicKey, 
     let withdrawInstruction = new TransactionInstruction({
             programId: programId,
             keys: accounts,
-            data: Buffer.from(serializeOldWithdraw(instructionData)),
+            data: Buffer.from(serializeSpecialWithdraw(instructionData)),
         }
     );
 
@@ -191,27 +172,6 @@ export async function oldWithdraw(connection: Connection, programId: PublicKey, 
     console.log(`withdraw counter was ${state.withdrawCounter}, but now is ${changedState.withdrawCounter}`);
 
 }
-
-async function closeAlt(connection: Connection, lookupTableKey: PublicKey) {
-    let altDeactivateInstruction = AddressLookupTableProgram.deactivateLookupTable({
-        authority: PAYER.publicKey,
-        lookupTable: lookupTableKey
-    })
-
-    let altCloseInstruction = AddressLookupTableProgram.closeLookupTable({
-        authority: PAYER.publicKey,
-        lookupTable: lookupTableKey,
-        recipient: PAYER.publicKey
-    });
-
-    let tx = new Transaction(await connection.getLatestBlockhash());
-    tx.add(altDeactivateInstruction);
-    tx.add(altCloseInstruction);
-    tx.sign(PAYER);
-    await sendAndConfirmTransaction(connection, tx, [PAYER]);
-    console.info(`ALT ${lookupTableKey} was successfully closed, resource returned to PAYER.`);
-}
-
 function getTxPossibleSize(blockhashInfo: web3.BlockhashWithExpiryBlockHeight, instructions: TransactionInstruction[]): number {
     let tx = new Transaction(blockhashInfo);
     tx.add(...instructions);

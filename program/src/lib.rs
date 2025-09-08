@@ -6,6 +6,7 @@ use crate::processors::buy::buy;
 use crate::processors::initialize::initialize;
 use crate::processors::migrate::migrate_to_v3;
 use crate::processors::obtain::obtain_ticket;
+use crate::processors::special_withdraw::special_withdraw;
 use crate::processors::update_state::update_state;
 use crate::processors::withdraw::withdraw;
 
@@ -52,6 +53,15 @@ fn process_instruction<'a>(
             let spl_program = next_account_info(accounts_iter)?;
 
             withdraw(program_id, payer, &params, state_pda, vault_pda, system_program, spl_program, accounts_iter)?;
+        }
+        Instruction::SpecialWithdraw(params) => {
+            let payer = next_account_info(accounts_iter)?;
+            let vault_pda = next_account_info(accounts_iter)?;
+            let state_pda = next_account_info(accounts_iter)?;
+            let system_program = next_account_info(accounts_iter)?;
+            let spl_program = next_account_info(accounts_iter)?;
+
+            special_withdraw(program_id, payer, &params, state_pda, vault_pda, system_program, spl_program, accounts_iter)?;
         }
         Instruction::Initialize(params) => {
             let admin = next_account_info(accounts_iter)?;

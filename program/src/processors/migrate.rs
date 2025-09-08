@@ -60,9 +60,9 @@ pub fn migrate_to_v3<'a>(
         owner: old_state.owner,
         vault_bump: old_state.vault_bump,
         prices: old_state.prices,
-        base_url: old_state.base_url,
-        // first_index: old_state.first_index,
         withdraw_counter: old_state.withdraw_counter,
+        special_withdraw_max_index: old_state.special_withdraw_max_index,
+        special_withdraw_tickets: old_state.special_withdraw_tickets,
     };
 
     msg!("Save migrated state.");

@@ -7,6 +7,7 @@ enum InstructionType {
     ObtainTicket,
     Buy = 4,
     Withdraw = 5,
+    SpecialWithdraw = 6,
     UpdateState = 252,
     Migrate = 253,
     AdminWithdraw = 254,
@@ -223,6 +224,32 @@ export class OldWithdraw {
     }
 }
 
+export class SpecialWithdraw {
+    readonly static SCHEMA = BorshSchema.Struct({
+        instruction: BorshSchema.u8,
+        lootboxId: BorshSchema.u16,
+        expireAt: BorshSchema.u32,
+        signature: Signature.SCHEMA,
+        amounts: BorshSchema.Vec(BorshSchema.u64),
+        tickets: BorshSchema.Vec(BorshSchema.u16),
+    });
+
+    instruction: InstructionType = InstructionType.SpecialWithdraw;
+    lootboxId: number;
+    tickets: number[];
+    amounts: number[];
+    expireAt: number;
+    signature: Signature;
+
+    constructor(lootboxId: number, tickets: number[], amounts: number[], expireAt: number, signature: Signature) {
+        this.lootboxId = lootboxId;
+        this.tickets = tickets;
+        this.amounts = amounts;
+        this.expireAt = expireAt;
+        this.signature = signature;
+    }
+}
+
 export class Withdraw {
     static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
@@ -280,6 +307,10 @@ export function serializeObtainTicket(instruction: ObtainTicket): Uint8Array {
 
 export function serializeOldWithdraw(instruction: OldWithdraw): Uint8Array {
     return borshSerialize(OldWithdraw.SCHEMA, instruction);
+}
+
+export function serializeSpecialWithdraw(instruction: SpecialWithdraw): Uint8Array {
+    return borshSerialize(SpecialWithdraw.SCHEMA, instruction);
 }
 
 export function serializeWithdraw(instruction: Withdraw): Uint8Array {
