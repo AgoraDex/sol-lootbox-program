@@ -48,7 +48,7 @@ jobs:
         continue-on-error: true
       - name: Build
         run: solana-verify build "$(pwd)/program" -b "${{ env.SOLANA_VERIFY_IMAGE }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: program/target/deploy/sm.so
@@ -68,7 +68,7 @@ jobs:
     needs: build
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
           name: ${{ env.ARTIFACT_NAME }}
       - name: Cache
@@ -82,22 +82,25 @@ jobs:
           sh -c "$(curl -sSfL https://release.anza.xyz/${{ env.SOLANA_VERSION }}/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
       - name: Prepare secrets
+        env:
+          PROGRAM_KEY: ${{ secrets.PROGRAM_KEY }}
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
         run: |
-          echo '${{ secrets.PROGRAM_KEY }}' > program-key.json
-          echo '${{ secrets.ADMIN_KEY }}' > admin-key.json
-          solana account -u ${{ vars.ENDPOINT }} program-key.json || true
-          solana account -u ${{ vars.ENDPOINT }} admin-key.json || true
+          umask 077
+          echo "$PROGRAM_KEY" > ${{ runner.temp }}/program-key.json
+          echo "$ADMIN_KEY"' > ${{ runner.temp }}/admin-key.json
+          solana account -u ${{ vars.ENDPOINT }} ${{ runner.temp }}/program-key.json || true
+          solana account -u ${{ vars.ENDPOINT }} ${{ runner.temp }}/admin-key.json || true
       - name: Deploy
         run: |
-          ls -al
-          solana program deploy -u ${{ vars.ENDPOINT }} -k "admin-key.json" --program-id "program-key.json" sm.so
+          solana program deploy -u ${{ vars.ENDPOINT }} -k "${{ runner.temp }}/admin-key.json" --program-id "${{ runner.temp }}/program-key.json" sm.so
       - name: Drop secrets
         run:
-          rm -f *-key.json
+          rm -f ${{ runner.temp }}/*-key.json
   cleanup:
     runs-on: ubuntu-latest
     needs: deploy
     steps:
-      - uses: geekyeggo/delete-artifact@v5
+      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b
         with:
           name: ${{ env.ARTIFACT_NAME }}
