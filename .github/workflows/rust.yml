@@ -17,10 +17,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       - name: Cache cargo
         id: cache-cargo
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809
         with:
           path: |
             ~/.cargo
@@ -33,7 +33,7 @@ jobs:
 
       - name: Cache docker
         id: cache-docker
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809
         with:
           path: |
             "${{ env.DOCKER_CACHE_DIR }}"
@@ -72,7 +72,7 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME }}
       - name: Cache
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809
         with:
           path: |
             ~/.local
