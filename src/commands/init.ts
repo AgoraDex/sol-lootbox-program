@@ -29,14 +29,29 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
         lootboxId,
         vaultBump,
         stateBump,
-        125000,
-        1756918687,
-        1788454695,
+        1000,
+        1745343718,
+        1776879718,
         new Uint8Array(signer),
-        "Solana Lootbox v2 Infinity",
-        [1_000_000, 4_000_000_000],
-        ""
+        "Test 2",
+        [5000000, 10000000],
+        60,
+        2821
     );
+
+    // let init = new Initialize(
+    //     lootboxId,
+    //     vaultBump,
+    //     stateBump,
+    //     125000,
+    //     1756918687,
+    //     1788454695,
+    //     new Uint8Array(signer),
+    //     "Solana Lootbox v2 Infinity",
+    //     [1_000_000, 4_000_000_000],
+    //     60,
+    //     2821
+    // );
 
     // let str = Array.from(serializeInstruction(init)).map(value => value.toString(16).padStart(2, "0")).toString()
     // console.log("Ser: " + str);

@@ -62,6 +62,11 @@ pub fn update_state<'a>(
         msg!("Update {} prices.", state.prices.len());
     }
 
+    if params.is_total_supply() {
+        msg!("Update total supply from {} to {}", state.total_supply, params.total_supply);
+        state.total_supply = params.total_supply;
+    }
+
     msg!("Save state.");
     state.save_to(state_pda)?;
 

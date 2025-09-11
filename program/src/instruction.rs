@@ -52,6 +52,7 @@ pub struct UpdateStateParams {
     pub lootbox_id: u16,
     pub enabled_fields: u32,
     pub max_supply: u32,
+    pub total_supply: u32,
     pub begin_ts: u32,
     pub end_ts: u32,
     pub price_ata: Pubkey,
@@ -65,6 +66,7 @@ impl UpdateStateParams {
     const END_TS: u32 = 4;
     const PRICE: u32 = 8;
     const PRICES: u32 = 16;
+    const TOTAL_SUPPLY: u32 = 32;
 
     fn is_field(&self, flag: u32) -> bool {
         (self.enabled_fields & flag) == flag
@@ -88,6 +90,10 @@ impl UpdateStateParams {
 
     pub fn is_prices(&self) -> bool {
         self.is_field(Self::PRICES)
+    }
+
+    pub fn is_total_supply(&self) -> bool {
+        self.is_field(Self::TOTAL_SUPPLY)
     }
 }
 
