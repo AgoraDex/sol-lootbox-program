@@ -26,7 +26,8 @@ export class Initialize {
         signer: BorshSchema.Array(BorshSchema.u8, 33),
         name: BorshSchema.String,
         prices: BorshSchema.Vec(BorshSchema.u64),
-        baseUrl: BorshSchema.String,
+        specialWithdrawSize: BorshSchema.u8,
+        specialWithdrawMaxIndex: BorshSchema.u16,
     });
 
     instruction: InstructionType = InstructionType.Initialize;
@@ -39,9 +40,11 @@ export class Initialize {
     signer: Uint8Array;
     name: string;
     prices: number[];
-    baseUrl: string;
+    specialWithdrawSize: number;
+    specialWithdrawMaxIndex: number;
 
-    constructor(lootboxId: number, vaultBump: number, stateBump: number, maxSupply: number, beginTs: number, endTs: number, signer: Uint8Array, name: string, prices: number[], baseUrl: string) {
+
+    constructor(lootboxId: number, vaultBump: number, stateBump: number, maxSupply: number, beginTs: number, endTs: number, signer: Uint8Array, name: string, prices: number[], specialWithdrawSize: number, specialWithdrawMaxIndex: number) {
         this.lootboxId = lootboxId;
         this.vaultBump = vaultBump;
         this.stateBump = stateBump;
@@ -51,7 +54,8 @@ export class Initialize {
         this.signer = signer;
         this.name = name;
         this.prices = prices;
-        this.baseUrl = baseUrl;
+        this.specialWithdrawSize = specialWithdrawSize;
+        this.specialWithdrawMaxIndex = specialWithdrawMaxIndex;
     }
 }
 
