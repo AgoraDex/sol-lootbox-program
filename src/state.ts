@@ -39,10 +39,11 @@ export class State {
     name: string;
     signer: Uint8Array;
     prices: Price[];
-    baseUrl: string;
     withdrawCounter: number;
+    specialWithdrawMaxIndex: number;
+    specialWithdrawTickets: number[];
 
-    constructor(version: StateVersion, id: number, owner: Uint8Array, vaultBump: number, totalSupply: number, maxSupply: number, beginTs: number, endTs: number, name: string, signer: Uint8Array, prices: Price[], baseUrl: string, paymentAta: Uint8Array, withdrawCounter: number) {
+    constructor(version: StateVersion, id: number, owner: Uint8Array, vaultBump: number, totalSupply: number, maxSupply: number, beginTs: number, endTs: number, name: string, signer: Uint8Array, prices: Price[], withdrawCounter: number, specialWithdrawMaxIndex: number, specialWithdrawTickets: number[]) {
         this.version = version;
         this.id = id;
         this.owner = owner;
@@ -54,8 +55,9 @@ export class State {
         this.name = name;
         this.signer = signer;
         this.prices = prices;
-        this.baseUrl = baseUrl;
         this.withdrawCounter = withdrawCounter;
+        this.specialWithdrawMaxIndex = specialWithdrawMaxIndex;
+        this.specialWithdrawTickets = specialWithdrawTickets;
     }
 }
 
@@ -71,19 +73,28 @@ const schema = BorshSchema.Struct({
     name: BorshSchema.String,
     signer: BorshSchema.Array(BorshSchema.u8, 33),
     prices: BorshSchema.Vec(Price.SCHEMA),
-    baseUrl: BorshSchema.String,
     withdrawCounter: BorshSchema.u32,
+    specialWithdrawMaxIndex: BorshSchema.u16,
+    specialWithdrawTickets: BorshSchema.Array(BorshSchema.u8, 100),
 });
 
-export function createSeed(admin: PublicKey, lootboxId: number): Buffer[] {
+export function createStateSeed(admin: PublicKey, lootboxId: number): Buffer[] {
     const buf = Buffer.alloc(2);
     buf.writeUint16BE(lootboxId);
 
     return [admin.toBuffer(), Buffer.from(STATE_SEED), buf];
 }
 
+
+function createVaultSeed(admin: PublicKey, lootboxId: number): Buffer[] {
+    const buf = Buffer.alloc(2);
+    buf.writeUint16BE(lootboxId);
+
+    return [admin.toBuffer(), Buffer.from(VAULT_SEED), buf];
+}
+
 export function findStateAddress(admin: PublicKey, lootboxId: number, programId: PublicKey): [PublicKey, number] {
-    const seed = createSeed(admin, lootboxId);
+    const seed = createStateSeed(admin, lootboxId);
     return PublicKey.findProgramAddressSync(seed, programId);
 }
 

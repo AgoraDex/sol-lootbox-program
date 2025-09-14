@@ -30,7 +30,7 @@ export async function updateState(connection: Connection, programId: PublicKey, 
     let params = new UpdateState(
         lootboxId,
         stateBump,
-    ).withBeginTs(1753785363);
+    ).withTotalSupply(1000);
 
     console.log(`Data: ${Buffer.from(serializeUpdateState(params)).toString('hex')}`);
 

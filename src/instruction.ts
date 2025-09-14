@@ -77,6 +77,7 @@ const BEGIN_TS: u32 = 2;
 const END_TS: u32 = 4;
 const PRICE: u32 = 8;
 const PRICES: u32 = 16;
+const TOTAL_SUPPLY: u32 = 32;
 
 export class UpdateState {
     static readonly SCHEMA = BorshSchema.Struct({
@@ -85,6 +86,7 @@ export class UpdateState {
         lootboxId: BorshSchema.u16,
         enabledFields: BorshSchema.u32,
         maxSupply: BorshSchema.u32,
+        totalSupply: BorshSchema.u32,
         beginTs: BorshSchema.u32,
         endTs: BorshSchema.u32,
         priceAta: BorshSchema.Array(BorshSchema.u8, 32),
@@ -93,15 +95,16 @@ export class UpdateState {
     });
 
     instruction: InstructionType = InstructionType.UpdateState;
-    stateBump: number;
-    lootboxId: number;
+    stateBump: number = 0;
+    lootboxId: number = 0;
     enabledFields: number = 0;
     maxSupply: number = 0;
+    totalSupply: number = 0;
     beginTs: number = 0;
     endTs: number = 0;
     priceAta: Uint8Array = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     priceAmount: number = 0;
-    prices: number[];
+    prices: number[] = [];
 
     constructor(lootboxId: number, stateBump: number) {
         this.lootboxId = lootboxId;
@@ -136,6 +139,12 @@ export class UpdateState {
     public withPrices(value: number[]) : UpdateState {
         this.prices = value;
         this.enabledFields |= PRICES;
+        return this;
+    }
+
+    public withTotalSupply(value: number) : UpdateState {
+        this.totalSupply = value;
+        this.enabledFields |= TOTAL_SUPPLY;
         return this;
     }
 }
