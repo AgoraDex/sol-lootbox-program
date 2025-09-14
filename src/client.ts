@@ -25,6 +25,7 @@ import {unpackTx} from "./commands/unpack-tx";
 import {updatePrice} from "./commands/update-price";
 import {updatePrices} from "./commands/update-prices";
 import {oldWithdraw} from "./commands/old-withdraw";
+import {state} from "./commands/state";
 
 // my NFT token
 // const tokenId = new PublicKey("GM1PUUg1Q8cvG8sfW53aKf5PA2kmxoPEGd28VQueiZTH");
@@ -211,15 +212,19 @@ async function main (argv: string[]) {
                 throw new Error("Usage: npm run action update-price <ata> <amount>");
             }
 
-            await updatePrice(connection, PARAMS.programId, PARAMS.lootboxId, new PublicKey(argv[3]), argv[4]);
+            await updatePrice(connection, PARAMS.programId, PARAMS.lootboxId, new PublicKey(argv[3]), Number(argv[4]));
             break;
         }
         case "update-prices": {
             await updatePrices(connection, PARAMS.programId, PARAMS.lootboxId, PARAMS.usdcMint, PARAMS.borgMint);
             break;
         }
+        case "state": {
+            await state(connection, PARAMS.programId, PARAMS.lootboxId);
+            break;
+        }
         default:
-            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw|new-key|unpack-tx|update-price|update-prices|old-withdraw>");
+            console.log("Usage: ts-node client.js <buy|init|withdraw|new-admin|obtain-ticket|create-token|mint-tokens|migrate|mint-nft|transfer|create-ata|get-state|admin-withdraw|new-key|unpack-tx|update-price|update-prices|old-withdraw|state>");
     }
 }
 
