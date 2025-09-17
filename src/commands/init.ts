@@ -1,5 +1,5 @@
 import {
-    Connection,
+    Connection, Keypair,
     PublicKey,
     sendAndConfirmTransaction,
     SystemProgram,
@@ -7,16 +7,16 @@ import {
     TransactionInstruction
 } from "@solana/web3.js";
 import * as spl from "@solana/spl-token";
-import {ADMIN} from "../secrets";
 import {Initialize, serializeInitialize} from "../instruction";
 import {findStateAddress, loadState, VAULT_SEED} from "../state";
 
-export async function init(connection: Connection, programId: PublicKey, lootboxId: number, signer: Buffer, paymentToken1: PublicKey, paymentToken2: PublicKey) {
+export async function init(connection: Connection, admin: Keypair, programId: PublicKey, lootboxId: number, signer: Buffer, paymentToken1: PublicKey, paymentToken2: PublicKey) {
     const blockhashInfo = await connection.getLatestBlockhash();
     let tx = new Transaction(blockhashInfo);
-    let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId)
-    let [statePda, stateBump] = findStateAddress(ADMIN.publicKey, lootboxId, programId);
+    let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([admin.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId)
+    let [statePda, stateBump] = findStateAddress(admin.publicKey, lootboxId, programId);
 
+    console.info(`Admin: ${admin.publicKey}`);
     console.info(`Vault: ${vaultPda}`);
     console.info(`State: ${statePda}`);
     console.info(`Signer: ${signer.toString("hex")} (${signer.length})`);
@@ -29,14 +29,14 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
         lootboxId,
         vaultBump,
         stateBump,
-        1000,
-        1745343718,
-        1776879718,
+        2000,
+        new Date('2025-05-15 00:00:00Z').getTime() / 1000,
+        new Date('2025-05-30 00:00:00Z').getTime() / 1000,
         new Uint8Array(signer),
-        "Test 2",
-        [5000000, 10000000],
-        60,
-        2821
+        "Swissborg Solana",
+        [20000000],
+        84,
+        902
     );
 
     // let init = new Initialize(
@@ -62,7 +62,7 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
     if (paymentAtaAccount1 == null) {
         tx.add(
             spl.createAssociatedTokenAccountInstruction(
-                ADMIN.publicKey,
+                admin.publicKey,
                 paymentAta1,
                 vaultPda,
                 paymentToken1
@@ -70,37 +70,37 @@ export async function init(connection: Connection, programId: PublicKey, lootbox
         );
     }
 
-    let paymentAta2 = await spl.getAssociatedTokenAddress(paymentToken2, vaultPda, true);
-    console.info(`Price ATA 2: ${paymentAta2}`);
-    let paymentAtaAccount2 = await connection.getAccountInfo(paymentAta2);
-    if (paymentAtaAccount2 == null) {
-        tx.add(
-            spl.createAssociatedTokenAccountInstruction(
-                ADMIN.publicKey,
-                paymentAta2,
-                vaultPda,
-                paymentToken2
-            )
-        );
-    }
+    // let paymentAta2 = await spl.getAssociatedTokenAddress(paymentToken2, vaultPda, true);
+    // console.info(`Price ATA 2: ${paymentAta2}`);
+    // let paymentAtaAccount2 = await connection.getAccountInfo(paymentAta2);
+    // if (paymentAtaAccount2 == null) {
+    //     tx.add(
+    //         spl.createAssociatedTokenAccountInstruction(
+    //             admin.publicKey,
+    //             paymentAta2,
+    //             vaultPda,
+    //             paymentToken2
+    //         )
+    //     );
+    // }
 
     tx.add(
         new TransactionInstruction({
             programId: programId,
             keys: [
-                {pubkey: ADMIN.publicKey, isWritable: false, isSigner: true},
+                {pubkey: admin.publicKey, isWritable: false, isSigner: true},
                 {pubkey: vaultPda, isWritable: true, isSigner: false},
                 {pubkey: statePda, isWritable: true, isSigner: false},
                 {pubkey: SystemProgram.programId, isWritable: false, isSigner: false},
                 {pubkey: paymentAta1, isWritable: false, isSigner: false},
-                {pubkey: paymentAta2, isWritable: false, isSigner: false},
+                // {pubkey: paymentAta2, isWritable: false, isSigner: false},
             ],
             data: Buffer.from(serializeInitialize(init)),
         })
     );
 
-    tx.sign(ADMIN);
-    let hash = await sendAndConfirmTransaction(connection, tx, [ADMIN]);
+    tx.sign(admin);
+    let hash = await sendAndConfirmTransaction(connection, tx, [admin]);
     console.log(`tx hash: ${hash}`);
 
     let data = await connection.getParsedAccountInfo(statePda);

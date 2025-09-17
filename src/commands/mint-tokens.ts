@@ -1,6 +1,6 @@
 import {Connection, PublicKey} from "@solana/web3.js";
-import {createMint, getOrCreateAssociatedTokenAccount, mintTo} from "@solana/spl-token";
-import {ADMIN, PAYER} from "../secrets";
+import {getOrCreateAssociatedTokenAccount, mintTo} from "@solana/spl-token";
+import {PAYER, TOKEN_OWNER} from "../secrets";
 
 export async function mintTokens(connection: Connection, mint: PublicKey, amount: bigint, dest: PublicKey) {
 
@@ -16,10 +16,10 @@ export async function mintTokens(connection: Connection, mint: PublicKey, amount
 
     await mintTo(
         connection,
-        ADMIN,
+        TOKEN_OWNER,
         mint,
         payerAta.address,
-        ADMIN,
+        TOKEN_OWNER,
         amount
     );
 

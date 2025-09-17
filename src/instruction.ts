@@ -72,12 +72,12 @@ export class Migrate {
         this.stateBump = stateBump;
     }
 }
-const MAX_SUPPLY: u32 = 1;
-const BEGIN_TS: u32 = 2;
-const END_TS: u32 = 4;
-const PRICE: u32 = 8;
-const PRICES: u32 = 16;
-const TOTAL_SUPPLY: u32 = 32;
+const MAX_SUPPLY = 1;
+const BEGIN_TS = 2;
+const END_TS = 4;
+const PRICE = 8;
+const PRICES = 16;
+const TOTAL_SUPPLY = 32;
 
 export class UpdateState {
     static readonly SCHEMA = BorshSchema.Struct({
@@ -102,7 +102,7 @@ export class UpdateState {
     totalSupply: number = 0;
     beginTs: number = 0;
     endTs: number = 0;
-    priceAta: Uint8Array = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    priceAta: Uint8Array = new Uint8Array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
     priceAmount: number = 0;
     prices: number[] = [];
 
@@ -212,7 +212,7 @@ export class ObtainTicket {
 }
 
 export class OldWithdraw {
-    readonly static SCHEMA = BorshSchema.Struct({
+    static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
         lootboxId: BorshSchema.u16,
         expireAt: BorshSchema.u32,
@@ -238,7 +238,7 @@ export class OldWithdraw {
 }
 
 export class SpecialWithdraw {
-    readonly static SCHEMA = BorshSchema.Struct({
+    static readonly SCHEMA = BorshSchema.Struct({
         instruction: BorshSchema.u8,
         lootboxId: BorshSchema.u16,
         expireAt: BorshSchema.u32,

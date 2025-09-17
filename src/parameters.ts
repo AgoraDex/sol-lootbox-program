@@ -1,6 +1,6 @@
 import {PROFILE, PROFILE_DEVNET, PROFILE_DEVNET_OLD, PROFILE_MAINNET, PROFILE_MAINNET_OLD} from "./profile";
-import {PublicKey} from "@solana/web3.js";
-import {secrets} from "./secrets";
+import {Keypair, PublicKey} from "@solana/web3.js";
+import {getKeypair, secrets} from "./secrets";
 
 let params: { [name: string]: IParams } = {};
 
@@ -14,10 +14,25 @@ interface IParams {
     lootboxId: number;
     endpoint: string;
     signer: Buffer;
+    admin: Keypair;
 }
 
 params[PROFILE_MAINNET] = {
-    programId: new PublicKey("AGLBDv2cn7RD5GzJi46zxqqPNvF3GREQdVYkZzhxV3wv"),
+    programId: new PublicKey("AGLBQbbahLsenbFRmtZRRCeKgNavgZvcaVDhwWt1teZt"),
+    usdcMint: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+    borgMint: new PublicKey("3dQTr7ror2QPKQ3GbBCokJUmjErGg8kTJzdnYjNfvi3Z"),
+    xbgMint: new PublicKey("XBGdqJ9P175hCC1LangCEyXWNeCPHaKWA17tymz2PrY"),
+    borgyMint: new PublicKey("BorGY4ub2Fz4RLboGxnuxWdZts7EKhUTB624AFmfCgX"),
+    gnetMint: undefined,
+    lootboxId: 1,
+    endpoint: `https://burned-weathered-dinghy.solana-mainnet.quiknode.pro/${secrets.quick_node_key}`,
+    signer: Buffer.from("020b9ecdce09a6ad4e6d0de60f604618aaceec4cb533b1d1e1becb1901c8215515", "hex"),
+    admin: getKeypair("admin1_mainnet_key"),
+};
+
+
+params["mainnet-4"] = {
+    programId: new PublicKey("AGLBQbbahLsenbFRmtZRRCeKgNavgZvcaVDhwWt1teZt"),
     usdcMint: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
     borgMint: new PublicKey("3dQTr7ror2QPKQ3GbBCokJUmjErGg8kTJzdnYjNfvi3Z"),
     xbgMint: new PublicKey("XBGdqJ9P175hCC1LangCEyXWNeCPHaKWA17tymz2PrY"),
@@ -26,6 +41,7 @@ params[PROFILE_MAINNET] = {
     lootboxId: 4,
     endpoint: `https://burned-weathered-dinghy.solana-mainnet.quiknode.pro/${secrets.quick_node_key}`,
     signer: Buffer.from("020b9ecdce09a6ad4e6d0de60f604618aaceec4cb533b1d1e1becb1901c8215515", "hex"),
+    admin: getKeypair("admin_mainnet_key"),
 };
 
 params["mainnet-forgana"] = {
@@ -38,6 +54,7 @@ params["mainnet-forgana"] = {
     lootboxId: 3,
     endpoint: `https://burned-weathered-dinghy.solana-mainnet.quiknode.pro/${secrets.quick_node_key}`,
     signer: Buffer.from("020b9ecdce09a6ad4e6d0de60f604618aaceec4cb533b1d1e1becb1901c8215515", "hex"),
+    admin: getKeypair("admin_mainnet_key"),
 };
 
 params[PROFILE_MAINNET_OLD] = {
@@ -50,6 +67,7 @@ params[PROFILE_MAINNET_OLD] = {
     lootboxId: 1,
     endpoint: `https://burned-weathered-dinghy.solana-mainnet.quiknode.pro/${secrets.quick_node_key}`,
     signer: Buffer.from("020b9ecdce09a6ad4e6d0de60f604618aaceec4cb533b1d1e1becb1901c8215515", "hex"),
+    admin: getKeypair("admin_mainnet_key"),
 };
 
 params[PROFILE_DEVNET] = {
@@ -62,6 +80,7 @@ params[PROFILE_DEVNET] = {
     lootboxId: 2,
     endpoint: `https://api.devnet.solana.com`,
     signer: Buffer.from("033e2222644f8d418e9b51622ba74eb23313c7cabbba68d45d767ae321bd34b5eb", "hex"),
+    admin: getKeypair("admin_devnet_key"),
 }
 
 params["olddev"] = {
@@ -74,6 +93,7 @@ params["olddev"] = {
     lootboxId: 2,
     endpoint: `https://api.devnet.solana.com`,
     signer: Buffer.from("033e2222644f8d418e9b51622ba74eb23313c7cabbba68d45d767ae321bd34b5eb", "hex"),
+    admin: getKeypair("admin_devnet_key_2"),
 }
 
 params["newdev"] = {
@@ -86,6 +106,7 @@ params["newdev"] = {
     lootboxId: 6,
     endpoint: `https://api.devnet.solana.com`,
     signer: Buffer.from("033e2222644f8d418e9b51622ba74eb23313c7cabbba68d45d767ae321bd34b5eb", "hex"),
+    admin: getKeypair("admin_devnet_key"),
 }
 
 export const PARAMS = params[PROFILE];

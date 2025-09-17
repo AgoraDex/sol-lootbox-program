@@ -66,7 +66,7 @@ async function main (argv: string[]) {
             await buy(connection, PARAMS.programId, PAYER, PARAMS.lootboxId, PARAMS.borgMint);
             break;
         case "init":
-            await init(connection, PARAMS.programId, PARAMS.lootboxId, PARAMS.signer, PARAMS.usdcMint, PARAMS.borgMint);
+            await init(connection, PARAMS.admin, PARAMS.programId, PARAMS.lootboxId, PARAMS.signer, PARAMS.usdcMint, PARAMS.borgMint);
             break;
         case "new-admin":
             await newAdmin(connection);
