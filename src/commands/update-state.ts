@@ -1,20 +1,20 @@
 import {
-    Connection,
+    Connection, Keypair,
     PublicKey,
     sendAndConfirmTransaction,
     Transaction,
     TransactionInstruction
 } from "@solana/web3.js";
-import {ADMIN} from "../secrets";
 import {serializeUpdateState, UpdateState} from "../instruction";
 import {findStateAddress, loadState, VAULT_SEED} from "../state";
 
-export async function updateState(connection: Connection, programId: PublicKey, lootboxId: number) {
+export async function updateState(connection: Connection, admin :Keypair, programId: PublicKey, lootboxId: number) {
     const blockhashInfo = await connection.getLatestBlockhash();
     let tx = new Transaction(blockhashInfo);
-    let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId)
+    console.info(`Admin: ${admin.publicKey}`);
+    let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([admin.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId)
     console.info(`Vault: ${vaultPda}`);
-    let [statePda, stateBump] = findStateAddress(ADMIN.publicKey, lootboxId, programId);
+    let [statePda, stateBump] = findStateAddress(admin.publicKey, lootboxId, programId);
 
     {
         let data = await connection.getParsedAccountInfo(statePda);
@@ -24,7 +24,7 @@ export async function updateState(connection: Connection, programId: PublicKey, 
         let buffer : Buffer = <Buffer>data.value.data;
         console.info(`State: ${statePda}, size ${buffer.length}`);
         let state = loadState(data.value);
-        console.info(`State: ${JSON.stringify(state, null, "  ")}`);
+        console.info(`State: ${state.toJson()}`);
     }
 
     let params = new UpdateState(
@@ -38,14 +38,14 @@ export async function updateState(connection: Connection, programId: PublicKey, 
         new TransactionInstruction({
             programId: programId,
             keys: [
-                {pubkey: ADMIN.publicKey, isWritable: false, isSigner: true},
+                {pubkey: admin.publicKey, isWritable: false, isSigner: true},
                 {pubkey: statePda, isWritable: true, isSigner: false},
             ],
             data: Buffer.from(serializeUpdateState(params)),
         })
     );
 
-    let hash = await sendAndConfirmTransaction(connection, tx, [ADMIN]);
+    let hash = await sendAndConfirmTransaction(connection, tx, [admin], {commitment: "confirmed"});
     console.log(`tx hash: ${hash}`);
 
     let data = await connection.getParsedAccountInfo(statePda);
@@ -53,6 +53,6 @@ export async function updateState(connection: Connection, programId: PublicKey, 
         throw new Error(`there is no account ${statePda}`);
     }
     let state = loadState(data.value);
-    console.info("State: " + JSON.stringify(state, null, "  "));
+    console.info("State: " + state.toJson());
     // console.info("Data: " + toHex(data.value.data))
 }

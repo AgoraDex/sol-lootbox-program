@@ -59,6 +59,18 @@ export class State {
         this.specialWithdrawMaxIndex = specialWithdrawMaxIndex;
         this.specialWithdrawTickets = specialWithdrawTickets;
     }
+
+    public toJson() {
+        return JSON.stringify(this, (key: string, value: any): any => {
+            if (value == null) {
+                return value;
+            }
+            if (Array.isArray(value) && value.length > 0 && typeof value[0] !== 'object') {
+                return `[${value.join(',')}]`;
+            }
+            return value;
+        }, "  ");
+    }
 }
 
 const schema = BorshSchema.Struct({
@@ -103,5 +115,7 @@ export function loadState(accountInfo: AccountInfo<Buffer | ParsedAccountData>):
     if (!(data instanceof Buffer)) {
         throw new Error(`data is not a buffer, but ${typeof data}`);
     }
-    return borshDeserialize<State>(schema, data);
+    const result = borshDeserialize<State>(schema, data);
+    Object.setPrototypeOf(result as object, State.prototype);
+    return result;
 }

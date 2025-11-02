@@ -9,7 +9,7 @@ const OLD_SECRETS_PATH = '../.secrets-old.json';
 
 export const secrets = require(SECRETS_PATH);
 
-export const PAYER = readKey(secrets[`payer_${PROFILE}_key`]);
+export const PAYER = readKey(secrets[`payer_devnet_key`]);
 // console.info("Payer: " + PAYER.publicKey);
 // export const ADMIN = readKey(secrets[`admin_${PROFILE}_key`]);
 // console.info("Admin: " + ADMIN.publicKey);

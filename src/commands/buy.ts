@@ -6,19 +6,19 @@ import {
     Transaction,
     TransactionInstruction
 } from "@solana/web3.js";
-import {ADMIN, PAYER} from "../secrets";
+import {PAYER} from "../secrets";
 import {findStateAddress, loadState, VAULT_SEED} from "../state";
 import {Buy, serializeBuy} from "../instruction";
 import * as spl from "@solana/spl-token";
 import {Ticket} from "../ticket";
 
-export async function buy(connection: Connection, programId: PublicKey, buyer: Keypair, lootboxId: number, paymentTokenMint: PublicKey) {
+export async function buy(connection: Connection, admin: Keypair, programId: PublicKey, buyer: Keypair, lootboxId: number, paymentTokenMint: PublicKey) {
     const blockHashInfo = await connection.getLatestBlockhash();
     let tx = new Transaction(blockHashInfo);
 
-    let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([ADMIN.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId);
+    let [vaultPda, vaultBump] = PublicKey.findProgramAddressSync([admin.publicKey.toBytes(), Buffer.from(VAULT_SEED)], programId);
     console.info(`Vault: ${vaultPda}`);
-    let [statePda, stateBump] = findStateAddress(ADMIN.publicKey, lootboxId, programId);
+    let [statePda, stateBump] = findStateAddress(admin.publicKey, lootboxId, programId);
     console.info(`State: ${statePda}`);
 
     let accountInfo = await connection.getParsedAccountInfo(statePda);

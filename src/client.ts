@@ -63,7 +63,7 @@ async function main (argv: string[]) {
     }
     switch (argv[2].toLowerCase()) {
         case "buy":
-            await buy(connection, PARAMS.programId, PAYER, PARAMS.lootboxId, PARAMS.borgMint);
+            await buy(connection, PARAMS.admin, PARAMS.programId, PAYER, PARAMS.lootboxId, PARAMS.usdcMint);
             break;
         case "init":
             await init(connection, PARAMS.admin, PARAMS.programId, PARAMS.lootboxId, PARAMS.signer, PARAMS.usdcMint, PARAMS.borgMint);
@@ -150,7 +150,7 @@ async function main (argv: string[]) {
             await migrate(connection, PARAMS.programId, PARAMS.lootboxId);
             break;
         case "update-state":
-            await updateState(connection, PARAMS.programId, PARAMS.lootboxId);
+            await updateState(connection, PARAMS.admin, PARAMS.programId, PARAMS.lootboxId);
             break;
         case "mint-nft": {
             if (argv.length != 4) {
@@ -220,7 +220,7 @@ async function main (argv: string[]) {
             break;
         }
         case "state": {
-            await state(connection, PARAMS.programId, PARAMS.lootboxId);
+            await state(connection, PARAMS.admin, PARAMS.programId, PARAMS.lootboxId);
             break;
         }
         default:

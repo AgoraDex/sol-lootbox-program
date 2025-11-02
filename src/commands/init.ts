@@ -21,22 +21,18 @@ export async function init(connection: Connection, admin: Keypair, programId: Pu
     console.info(`State: ${statePda}`);
     console.info(`Signer: ${signer.toString("hex")} (${signer.length})`);
 
-    // let now = new Date();
-    // let later = new Date();
-    // later.setFullYear(2026);
-
     let init = new Initialize(
         lootboxId,
         vaultBump,
         stateBump,
-        2000,
-        new Date('2025-05-15 00:00:00Z').getTime() / 1000,
-        new Date('2025-05-30 00:00:00Z').getTime() / 1000,
+        120000,
+        new Date('2025-10-30 00:00:00Z').getTime() / 1000,
+        new Date('2026-09-04 16:00:00Z').getTime() / 1000,
         new Uint8Array(signer),
-        "Swissborg Solana",
-        [20000000],
-        84,
-        902
+        "Infinity Solana",
+        [1000000],
+        0,
+        0
     );
 
     // let init = new Initialize(
@@ -100,7 +96,7 @@ export async function init(connection: Connection, admin: Keypair, programId: Pu
     );
 
     tx.sign(admin);
-    let hash = await sendAndConfirmTransaction(connection, tx, [admin]);
+    let hash = await sendAndConfirmTransaction(connection, tx, [admin], {commitment: "confirmed"});
     console.log(`tx hash: ${hash}`);
 
     let data = await connection.getParsedAccountInfo(statePda);
@@ -108,6 +104,6 @@ export async function init(connection: Connection, admin: Keypair, programId: Pu
         throw new Error(`there is no account ${statePda}`);
     }
     let state = loadState(data.value);
-    console.info("State: " + JSON.stringify(state, null, "  "));
+    console.info("State: " + state.toJson());
     // console.info("Data: " + toHex(data.value.data))
 }
